@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "rebind",
+  "version": "${version}",
+
+  "name": "Rebind",
+  "description": "",
+  "authors": [
+    "chyzman"
+  ],
+  "contact": {},
+
+  "license": "LGPL-3.0",
+  "icon": "assets/rebind/icon.png",
+
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.chyzman.rebind.client.RebindClient"
+    ],
+    "main": [
+      "com.chyzman.rebind.Rebind"
+    ]
+  },
+
+  "mixins": [
+    "rebind.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": "*",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  },
+
+  "custom": {
+    "loom:injected_interfaces": {
+      "net/minecraft/class_304": ["com/chyzman/rebind/pond/KeyBindingDuck"]
+    }
+  }
+}
