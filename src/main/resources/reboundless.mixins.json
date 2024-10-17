@@ -1,17 +1,20 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "com.chyzman.rebind.mixin",
+  "package": "com.chyzman.reboundless.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "common.access.ScrollContainerAccessor"
   ],
   "client": [
-    "client.ControlOptionsScreenMixin",
+    "client.AccessibilityOptionsScreenMixin",
+    "client.ControlsOptionsScreenMixin",
+    "client.ControlsOptionsScreenMixin",
     "client.GameOptionsMixin",
     "client.KeyBindingMixin",
     "client.KeyboardMixin",
     "client.MouseMixin",
+    "client.StickyKeyBindingMixin",
     "client.access.KeyBindingAccessor"
   ],
   "injectors": {

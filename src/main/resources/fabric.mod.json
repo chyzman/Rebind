@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "rebind",
+  "id": "reboundless",
   "version": "${version}",
 
-  "name": "Rebind",
+  "name": "Reboundless",
   "description": "",
   "authors": [
     "chyzman"
@@ -11,20 +11,20 @@
   "contact": {},
 
   "license": "LGPL-3.0",
-  "icon": "assets/rebind/icon.png",
+  "icon": "assets/reboundless/icon.png",
 
   "environment": "client",
   "entrypoints": {
     "client": [
-      "com.chyzman.rebind.client.RebindClient"
+      "com.chyzman.reboundless.client.ReboundlessClient"
     ],
     "main": [
-      "com.chyzman.rebind.Rebind"
+      "com.chyzman.reboundless.Reboundless"
     ]
   },
 
   "mixins": [
-    "rebind.mixins.json"
+    "reboundless.mixins.json"
   ],
 
   "depends": {
@@ -35,7 +35,7 @@
 
   "custom": {
     "loom:injected_interfaces": {
-      "net/minecraft/class_304": ["com/chyzman/rebind/pond/KeyBindingDuck"]
+      "net/minecraft/class_304": ["com/chyzman/reboundless/pond/KeyBindingDuck"]
     }
   }
 }

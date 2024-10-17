@@ -1,10 +1,10 @@
-package com.chyzman.rebind;
+package com.chyzman.reboundless;
 
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 
-public class Rebind implements ModInitializer {
-    public static final String MODID = "rebind";
+public class Reboundless implements ModInitializer {
+    public static final String MODID = "reboundless";
 
     @Override
     public void onInitialize() {

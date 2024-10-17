@@ -1,4 +1,4 @@
-package com.chyzman.rebind.mixin.common.access;
+package com.chyzman.reboundless.mixin.common.access;
 
 import io.wispforest.owo.ui.container.ScrollContainer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -7,14 +7,14 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(ScrollContainer.class)
 public interface ScrollContainerAccessor {
     @Accessor(value = "currentScrollPosition", remap = false)
-    double rebind$getCurrentScrollPosition();
+    double reboundless$getCurrentScrollPosition();
 
     @Accessor(value = "currentScrollPosition", remap = false)
-    void rebind$setCurrentScrollPosition(double position);
+    void reboundless$setCurrentScrollPosition(double position);
 
     @Accessor(value = "scrollOffset", remap = false)
-    double rebind$getScrollOffset();
+    double reboundless$getScrollOffset();
 
     @Accessor(value = "scrollOffset", remap = false)
-    void rebind$setScrollOffset(double scrollOffset);
+    void reboundless$setScrollOffset(double scrollOffset);
 }

@@ -1,4 +1,4 @@
-package com.chyzman.rebind.mixin.client;
+package com.chyzman.reboundless.mixin.client;
 
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.util.InputUtil;
@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static com.chyzman.rebind.client.RebindClient.CURRENTLY_HELD_KEYS;
+import static com.chyzman.reboundless.client.ReboundlessClient.CURRENTLY_HELD_KEYS;
 
 @Mixin(Keyboard.class)
 public abstract class KeyboardMixin {

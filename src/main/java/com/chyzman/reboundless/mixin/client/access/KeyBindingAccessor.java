@@ -1,4 +1,4 @@
-package com.chyzman.rebind.mixin.client.access;
+package com.chyzman.reboundless.mixin.client.access;
 
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -9,11 +9,11 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface KeyBindingAccessor {
 
     @Accessor("timesPressed")
-    int rebind$getTimesPressed();
+    int reboundless$getTimesPressed();
     @Accessor("timesPressed")
-    void rebind$setTimesPressed(int value);
+    void reboundless$setTimesPressed(int value);
 
     @Accessor("boundKey")
-    InputUtil.Key rebind$getBoundKey();
+    InputUtil.Key reboundless$getBoundKey();
 
 }
