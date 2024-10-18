@@ -1,5 +1,6 @@
 package com.chyzman.reboundless.screen;
 
+import com.chyzman.reboundless.mixin.client.access.KeyBindingAccessor;
 import com.chyzman.reboundless.mixin.common.access.ScrollContainerAccessor;
 import com.chyzman.reboundless.util.ScreenUtil;
 import io.wispforest.owo.mixin.ui.access.ClickableWidgetAccessor;
@@ -19,6 +20,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.tooltip.HoveredTooltipPositioner;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.EntryListWidget;
 import net.minecraft.client.gui.widget.PressableWidget;
@@ -27,6 +29,7 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,6 +39,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 import static com.chyzman.reboundless.client.ReboundlessClient.CURRENTLY_HELD_KEYS;
+import static com.chyzman.reboundless.client.ReboundlessClient.REAL_KEYS_MAP;
 
 @Environment(EnvType.CLIENT)
 public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements CommandOpenedScreen {
@@ -101,8 +105,8 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                 Sizing.fill(),
                 Sizing.fill(),
                 Containers.verticalFlow(Sizing.fill(), Sizing.content())
-                          .child(list)
-                          .padding(Insets.of(3).withRight(16))
+                        .child(list)
+                        .padding(Insets.of(3).withRight(16))
         );
         ((ScrollContainerAccessor) scrollContainer).reboundless$setCurrentScrollPosition(scrollAmount);
         ((ScrollContainerAccessor) scrollContainer).reboundless$setScrollOffset(scrollAmount);
@@ -114,33 +118,33 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
         rootComponent
                 .child(
                         Containers.verticalFlow(Sizing.fill(), Sizing.fixed(31))
-                                  .child(
-                                          Components.label(Text.translatable("controls.keybinds.title"))
-                                                    .shadow(true)
-                                  )
-                                  .alignment(HorizontalAlignment.CENTER, VerticalAlignment.CENTER)
+                                .child(
+                                        Components.label(Text.translatable("controls.keybinds.title"))
+                                                .shadow(true)
+                                )
+                                .alignment(HorizontalAlignment.CENTER, VerticalAlignment.CENTER)
                 )
                 .child(
                         Containers.horizontalFlow(Sizing.fill(), Sizing.fixed(2))
-                                  .surface(ScreenUtil.translucentTiledSurface(this.client.world == null ? Screen.HEADER_SEPARATOR_TEXTURE : Screen.INWORLD_HEADER_SEPARATOR_TEXTURE, 16, 2))
+                                .surface(ScreenUtil.translucentTiledSurface(this.client.world == null ? Screen.HEADER_SEPARATOR_TEXTURE : Screen.INWORLD_HEADER_SEPARATOR_TEXTURE, 16, 2))
                 )
                 .child(
                         Containers.stack(Sizing.fill(100), Sizing.expand())
-                                  .child(
-                                          Containers.horizontalFlow(Sizing.fill(), Sizing.fill())
-                                                    .child(scrollContainer)
-                                                    .padding(Insets.horizontal(50))
-                                                    .surface(ScreenUtil.translucentTiledSurface(this.client.world == null ? EntryListWidget.MENU_LIST_BACKGROUND_TEXTURE : EntryListWidget.INWORLD_MENU_LIST_BACKGROUND_TEXTURE, 16, 16))
-                                  )
                                 .child(
-                                        Containers.verticalFlow(Sizing.fixed(45),Sizing.fill())
+                                        Containers.horizontalFlow(Sizing.fill(), Sizing.fill())
+                                                .child(scrollContainer)
+                                                .padding(Insets.horizontal(50))
+                                                .surface(ScreenUtil.translucentTiledSurface(this.client.world == null ? EntryListWidget.MENU_LIST_BACKGROUND_TEXTURE : EntryListWidget.INWORLD_MENU_LIST_BACKGROUND_TEXTURE, 16, 16))
+                                )
+                                .child(
+                                        Containers.verticalFlow(Sizing.fixed(45), Sizing.fill())
                                                 .child(
                                                         Components.button(Text.literal("\uD83D\uDDD1"), button -> {
-                                                            var toggled = categoryComponents.values().stream().toList().getFirst().expanded();
-                                                            categoryComponents.values().forEach(container -> {
-                                                                if (container.expanded() == toggled) container.toggleExpansion();
-                                                            });
-                                                        })
+                                                                    var toggled = categoryComponents.values().stream().toList().getFirst().expanded();
+                                                                    categoryComponents.values().forEach(container -> {
+                                                                        if (container.expanded() == toggled) container.toggleExpansion();
+                                                                    });
+                                                                })
                                                                 .sizing(Sizing.fixed(20))
                                                 )
                                                 .margins(Insets.of(5))
@@ -148,14 +152,14 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                 )
                 .child(
                         Containers.horizontalFlow(Sizing.fill(), Sizing.fixed(2))
-                                  .surface(ScreenUtil.translucentTiledSurface(this.client.world == null ?FOOTER_SEPARATOR_TEXTURE : Screen.INWORLD_FOOTER_SEPARATOR_TEXTURE, 16, 2))
+                                .surface(ScreenUtil.translucentTiledSurface(this.client.world == null ? FOOTER_SEPARATOR_TEXTURE : Screen.INWORLD_FOOTER_SEPARATOR_TEXTURE, 16, 2))
                 )
                 .child(Containers.verticalFlow(Sizing.fill(), Sizing.fixed(21))
-                                 .<FlowLayout>configure(footer -> {
-                                     footer.alignment(HorizontalAlignment.RIGHT, VerticalAlignment.CENTER);
-                                     footer.margins(Insets.of(5));
-                                     footer.padding(Insets.horizontal(50));
-                                 }))
+                               .<FlowLayout>configure(footer -> {
+                                   footer.alignment(HorizontalAlignment.RIGHT, VerticalAlignment.CENTER);
+                                   footer.margins(Insets.of(5));
+                                   footer.padding(Insets.horizontal(50));
+                               }))
                 .alignment(HorizontalAlignment.CENTER, VerticalAlignment.CENTER);
     }
 
@@ -282,14 +286,14 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
             this.toggledCheck = Components.checkbox(Text.empty()).checked(keyBinding.reboundless$getExtraData().toggled().isTrue());
             this.toggledCheck.onChanged(nowChecked -> keyBinding.reboundless$getExtraData().toggled().setValue(nowChecked));
             this.child(Components.label(Text.translatable(keyBinding.getTranslationKey())).shadow(true)
-                                 .positioning(Positioning.relative(0, 50)));
+                               .positioning(Positioning.relative(0, 50)));
             this.child(
                     Containers.horizontalFlow(Sizing.content(), Sizing.fill())
-                              .child(bindButton.margins(Insets.right(3)))
-                              .child(resetButton)
-                              .child(toggledCheck)
-                              .positioning(Positioning.relative(100, 50))
-                              .verticalAlignment(VerticalAlignment.CENTER)
+                            .child(bindButton.margins(Insets.right(3)))
+                            .child(resetButton)
+                            .child(toggledCheck)
+                            .positioning(Positioning.relative(100, 50))
+                            .verticalAlignment(VerticalAlignment.CENTER)
             );
             keybindComponents.put(keyBinding, this);
             update();
@@ -302,6 +306,16 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
             resetButton.active(!keyBinding.isDefault());
         }
 
+        @Override
+        protected void drawChildren(OwoUIDrawContext context, int mouseX, int mouseY, float partialTicks, float delta, List<? extends Component> children) {
+            super.drawChildren(context, mouseX, mouseY, partialTicks, delta, children);
+
+            if (duplicateKey) {
+                int m = bindButton.x() - 6;
+                context.fill(m, y + 1, m + 3, y + height - 1, 100, Color.ofDye(DyeColor.ORANGE).argb());
+            }
+        }
+
         @Environment(EnvType.CLIENT)
         public class KeyBindButtonComponent extends ButtonComponent {
             protected KeyBindButtonComponent(Text message, Consumer<ButtonComponent> onPress) {
@@ -312,28 +326,29 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
             public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
                 this.renderer.draw((OwoUIDrawContext) context, this, delta);
 
-                var textRenderer = MinecraftClient.getInstance().textRenderer;
                 int color = this.active ? 0xffffff : 0xa0a0a0;
 
                 this.drawMessage(context, client.textRenderer, color);
-
-                var tooltip = ((ClickableWidgetAccessor) this).owo$getTooltip();
-                if (this.hovered && tooltip.getTooltip() != null)
-                    context.drawTooltip(textRenderer, tooltip.getTooltip().getLines(MinecraftClient.getInstance()), HoveredTooltipPositioner.INSTANCE, mouseX, mouseY);
-
-                if (duplicateKey) {
-                    int l = 3;
-                    int m = x - 6;
-                    context.fill(m, y - 1, m + 3, y + height, -65536);
-                }
             }
 
             public void update() {
-                var label = assembleTextFromModifiers( keyBinding.reboundless$getExtraData().modifiers());
+                duplicateKey = false;
+                var tooltip = Text.empty();
+                if (!keyBinding.isUnbound()) {
+                    var possibleConflicts = REAL_KEYS_MAP.get(((KeyBindingAccessor) keyBinding).reboundless$getBoundKey());
+                    possibleConflicts.forEach(possibleConfict -> {
+                        if (possibleConfict != keyBinding) {
+                            if (duplicateKey) tooltip.append(Text.literal(", "));
+                            duplicateKey = true;
+                            tooltip.append(Text.translatable(possibleConfict.getTranslationKey()));
+                        }
+                    });
+                }
+                var label = assembleTextFromModifiers(keyBinding.reboundless$getExtraData().modifiers());
                 label.append(keyBinding.getBoundKeyLocalizedText());
                 if (duplicateKey) {
-                    label = Text.literal("[ ").append(label.formatted(Formatting.WHITE)).append(" ]").formatted(Formatting.RED);
-
+                    label = Text.literal("[ ").append(label.formatted(Formatting.WHITE)).append(" ]").withColor(DyeColor.ORANGE.getEntityColor());
+                    setTooltip(Tooltip.of(Text.translatable("controls.keybinds.duplicateKeybinds", tooltip)));
                 }
                 this.setMessage(label);
             }
@@ -355,8 +370,8 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
 
     public static Text editingText(Text text) {
         return Text.literal("> ")
-                   .append(text.copy().formatted(Formatting.WHITE, Formatting.UNDERLINE))
-                   .append(" <")
-                   .formatted(Formatting.YELLOW);
+                .append(text.copy().formatted(Formatting.WHITE, Formatting.UNDERLINE))
+                .append(" <")
+                .formatted(Formatting.YELLOW);
     }
 }

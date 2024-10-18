@@ -27,7 +27,7 @@ public abstract class KeyBindingMixin implements KeyBindingDuck {
     @Shadow public abstract boolean isPressed();
     @Shadow private boolean pressed;
 
-    @Unique private ExtraKeyBindingData extraData;
+    @Unique private ExtraKeyBindingData extraData = new ExtraKeyBindingData();
     @Unique private ExtraKeyBindingData extraDataDefaults = new ExtraKeyBindingData();
 
     @Inject(method = "<init>(Ljava/lang/String;Lnet/minecraft/client/util/InputUtil$Type;ILjava/lang/String;)V", at = @At(value = "TAIL"))
