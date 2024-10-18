@@ -94,7 +94,7 @@ public abstract class KeyBindingMixin implements KeyBindingDuck {
 
     @Override
     public KeyBinding reboundless$setExtraData(ExtraKeyBindingData extraData) {
-        this.extraData = extraData;
+        this.extraData = new ExtraKeyBindingData(extraData);
         return (KeyBinding) (Object) this;
     }
 

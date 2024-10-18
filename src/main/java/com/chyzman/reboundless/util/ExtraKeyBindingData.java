@@ -22,4 +22,11 @@ public record ExtraKeyBindingData(
     public ExtraKeyBindingData() {
         this(new ArrayList<>(), new MutableBoolean());
     }
+
+    public ExtraKeyBindingData(ExtraKeyBindingData other) {
+        this(
+                new ArrayList<>(other.modifiers()),
+                new MutableBoolean(other.toggled().getValue())
+        );
+    }
 }

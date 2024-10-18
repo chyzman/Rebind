@@ -2,6 +2,7 @@ package com.chyzman.reboundless.screen;
 
 import com.chyzman.reboundless.mixin.common.access.ScrollContainerAccessor;
 import com.chyzman.reboundless.util.ScreenUtil;
+import io.wispforest.owo.mixin.ui.access.ClickableWidgetAccessor;
 import io.wispforest.owo.ui.base.BaseOwoScreen;
 import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.component.CheckboxComponent;
@@ -14,9 +15,13 @@ import io.wispforest.owo.ui.core.*;
 import io.wispforest.owo.ui.util.CommandOpenedScreen;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.tooltip.HoveredTooltipPositioner;
+import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.EntryListWidget;
+import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -28,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 import static com.chyzman.reboundless.client.ReboundlessClient.CURRENTLY_HELD_KEYS;
 
@@ -154,6 +160,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     }
 
     public void updateKeybinds() {
+        KeyBinding.updateKeysByCode();
         keybindComponents.forEach((keyBinding, component) -> component.update());
     }
 
@@ -161,13 +168,13 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (focusedBinding != null) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-                focusedBinding.setBoundKey(InputUtil.UNKNOWN_KEY);
+                gameOptions.setKeyCode(focusedBinding, InputUtil.UNKNOWN_KEY);
                 focusedBinding = null;
-                return true;
+                updateKeybinds();
             } else {
-                keybindComponents.get(focusedBinding).updateBindButton(editingText(assembleTextFromModifiers(CURRENTLY_HELD_KEYS)));
-                return true;
+                keybindComponents.get(focusedBinding).bindButton.setMessage(editingText(assembleTextFromModifiers(CURRENTLY_HELD_KEYS)));
             }
+            return true;
         } else {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
                 this.close();
@@ -186,7 +193,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (focusedBinding != null) {
-            keybindComponents.get(focusedBinding).updateBindButton(editingText(assembleTextFromModifiers(CURRENTLY_HELD_KEYS)));
+            keybindComponents.get(focusedBinding).bindButton.setMessage(editingText(assembleTextFromModifiers(CURRENTLY_HELD_KEYS)));
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -200,7 +207,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
 
     private boolean keyReleased() {
         if (focusedBinding != null && !CURRENTLY_HELD_KEYS.isEmpty()) {
-            focusedBinding.setBoundKey(CURRENTLY_HELD_KEYS.getLast());
+            gameOptions.setKeyCode(focusedBinding, CURRENTLY_HELD_KEYS.getLast());
             var temp = new ArrayList<>(CURRENTLY_HELD_KEYS);
             temp.removeLast();
             focusedBinding.reboundless$getExtraData().modifiers().clear();
@@ -236,38 +243,39 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     @Override
     @SuppressWarnings("DataFlowIssue")
     public void close() {
-        //TODO vanilla makes sure any options that are
+        //TODO vanilla makes sure any options that are currently being edited are saved
         this.client.setScreen(this.parent);
     }
 
     @Environment(EnvType.CLIENT)
     public class KeybindConfigurationComponent extends FlowLayout {
         protected final KeyBinding keyBinding;
-        protected final ButtonComponent bindButton;
+        protected final KeyBindButtonComponent bindButton;
         protected final ButtonComponent resetButton;
         protected final CheckboxComponent toggledCheck;
+        protected boolean duplicateKey = false;
+        protected int overlappingModifiers = 0;
 
         protected KeybindConfigurationComponent(KeyBinding keyBinding) {
             super(Sizing.fill(), Sizing.fixed(20), Algorithm.HORIZONTAL);
             this.keyBinding = keyBinding;
-            this.bindButton = Components.button(
+            this.bindButton = new KeyBindButtonComponent(
                     keyBinding.getBoundKeyLocalizedText(),
                     button -> {
                         if (focusedBinding == null) {
-                            updateBindButton(editingText(button.getMessage()));
+                            button.setMessage(editingText(button.getMessage()));
                             focusedBinding = keyBinding;
                             CURRENTLY_HELD_KEYS.clear();
                         }
                     }
             );
-            bindButton.sizing(Sizing.fixed(75), Sizing.fixed(20));
             this.resetButton = Components.button(
                     Text.literal("⇄"),
                     button -> {
                         focusedBinding = null;
-                        keyBinding.setBoundKey(keyBinding.getDefaultKey());
+                        gameOptions.setKeyCode(keyBinding, keyBinding.getDefaultKey());
                         keyBinding.reboundless$setExtraData(keyBinding.reboundless$getExtraDataDefaults());
-                        update();
+                        updateKeybinds();
                     }
             );
             this.resetButton.sizing(Sizing.fixed(20));
@@ -289,17 +297,53 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
 
         public void update() {
             var extraData = keyBinding.reboundless$getExtraData();
-            var label = assembleTextFromModifiers(extraData.modifiers());
-            label.append(keyBinding.getBoundKeyLocalizedText());
-            updateBindButton(label);
+            bindButton.update();
             toggledCheck.checked(extraData.toggled().isTrue());
             resetButton.active(!keyBinding.isDefault());
         }
 
-        @SuppressWarnings("DataFlowIssue")
-        public void updateBindButton(Text text) {
-            bindButton.setMessage(text);
-            bindButton.setWidth(Math.max(75, KeybindingScreen.super.client.textRenderer.getWidth(text) + 10));
+        @Environment(EnvType.CLIENT)
+        public class KeyBindButtonComponent extends ButtonComponent {
+            protected KeyBindButtonComponent(Text message, Consumer<ButtonComponent> onPress) {
+                super(message, onPress);
+            }
+
+            @Override
+            public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+                this.renderer.draw((OwoUIDrawContext) context, this, delta);
+
+                var textRenderer = MinecraftClient.getInstance().textRenderer;
+                int color = this.active ? 0xffffff : 0xa0a0a0;
+
+                this.drawMessage(context, client.textRenderer, color);
+
+                var tooltip = ((ClickableWidgetAccessor) this).owo$getTooltip();
+                if (this.hovered && tooltip.getTooltip() != null)
+                    context.drawTooltip(textRenderer, tooltip.getTooltip().getLines(MinecraftClient.getInstance()), HoveredTooltipPositioner.INSTANCE, mouseX, mouseY);
+
+                if (duplicateKey) {
+                    int l = 3;
+                    int m = x - 6;
+                    context.fill(m, y - 1, m + 3, y + height, -65536);
+                }
+            }
+
+            public void update() {
+                var label = assembleTextFromModifiers( keyBinding.reboundless$getExtraData().modifiers());
+                label.append(keyBinding.getBoundKeyLocalizedText());
+                if (duplicateKey) {
+                    label = Text.literal("[ ").append(label.formatted(Formatting.WHITE)).append(" ]").formatted(Formatting.RED);
+
+                }
+                this.setMessage(label);
+            }
+
+            @SuppressWarnings("DataFlowIssue")
+            @Override
+            public void setMessage(Text message) {
+                super.setMessage(message);
+                this.setWidth(Math.clamp(client.textRenderer.getWidth(message) + 10, 75, 250));
+            }
         }
     }
 
