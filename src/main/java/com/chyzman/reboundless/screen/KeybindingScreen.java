@@ -3,7 +3,6 @@ package com.chyzman.reboundless.screen;
 import com.chyzman.reboundless.mixin.client.access.KeyBindingAccessor;
 import com.chyzman.reboundless.mixin.common.access.ScrollContainerAccessor;
 import com.chyzman.reboundless.util.ScreenUtil;
-import io.wispforest.owo.mixin.ui.access.ClickableWidgetAccessor;
 import io.wispforest.owo.ui.base.BaseOwoScreen;
 import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.component.CheckboxComponent;
@@ -16,14 +15,10 @@ import io.wispforest.owo.ui.core.*;
 import io.wispforest.owo.ui.util.CommandOpenedScreen;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.tooltip.HoveredTooltipPositioner;
 import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.EntryListWidget;
-import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -38,8 +33,8 @@ import org.lwjgl.glfw.GLFW;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static com.chyzman.reboundless.client.ReboundlessClient.CURRENTLY_HELD_KEYS;
-import static com.chyzman.reboundless.client.ReboundlessClient.REAL_KEYS_MAP;
+import static com.chyzman.reboundless.Reboundless.CURRENTLY_HELD_KEYS;
+import static com.chyzman.reboundless.Reboundless.REAL_KEYS_MAP;
 
 @Environment(EnvType.CLIENT)
 public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements CommandOpenedScreen {
@@ -52,8 +47,6 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
 
     @Nullable
     protected KeyBinding focusedBinding;
-
-    protected boolean anyCategoriesExpanded = categoryStates.values().stream().anyMatch(b -> b);
 
     protected final Map<KeyBinding, KeybindConfigurationComponent> keybindComponents = new HashMap<>();
     protected final Map<String, CollapsibleContainer> categoryComponents = new HashMap<>();
@@ -94,7 +87,9 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                             flowLayout -> {},
                             KeybindConfigurationComponent::new,
                             true
-                    )).<CollapsibleContainer>configure(collapsible -> collapsible.onToggled().subscribe(nowExpanded -> categoryStates.put(category, nowExpanded)));
+                    )).<CollapsibleContainer>configure(collapsible -> collapsible.onToggled().subscribe(nowExpanded -> {
+                        categoryStates.put(category, nowExpanded);
+                    }));
                     categoryComponents.put(category, container);
                     return container;
                 },
@@ -140,9 +135,9 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                                         Containers.verticalFlow(Sizing.fixed(45), Sizing.fill())
                                                 .child(
                                                         Components.button(Text.literal("☐"), button -> {
-                                                                    var toggled = categoryComponents.values().stream().toList().getFirst().expanded();
+                                                                    var shouldCollapse = categoryStates.values().stream().allMatch(b -> b);
                                                                     categoryComponents.values().forEach(container -> {
-                                                                        if (container.expanded() == toggled) container.toggleExpansion();
+                                                                        if (container.expanded() == shouldCollapse) container.toggleExpansion();
                                                                     });
                                                                 })
                                                                 .sizing(Sizing.fixed(20))
@@ -221,6 +216,12 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (keyReleased()) return true;
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
     @Override

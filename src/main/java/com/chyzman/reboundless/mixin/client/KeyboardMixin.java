@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static com.chyzman.reboundless.client.ReboundlessClient.CURRENTLY_HELD_KEYS;
+import static com.chyzman.reboundless.Reboundless.CURRENTLY_HELD_KEYS;
 
 @Mixin(Keyboard.class)
 public abstract class KeyboardMixin {

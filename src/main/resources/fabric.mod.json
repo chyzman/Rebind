@@ -16,9 +16,6 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "com.chyzman.reboundless.client.ReboundlessClient"
-    ],
-    "main": [
       "com.chyzman.reboundless.Reboundless"
     ]
   },

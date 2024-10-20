@@ -16,8 +16,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Map;
 
-import static com.chyzman.reboundless.client.ReboundlessClient.CURRENTLY_HELD_KEYS;
-import static com.chyzman.reboundless.client.ReboundlessClient.REAL_KEYS_MAP;
+import static com.chyzman.reboundless.Reboundless.CURRENTLY_HELD_KEYS;
+import static com.chyzman.reboundless.Reboundless.REAL_KEYS_MAP;
 
 @Mixin(KeyBinding.class)
 public abstract class KeyBindingMixin implements KeyBindingDuck {
