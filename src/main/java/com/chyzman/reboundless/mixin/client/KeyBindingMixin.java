@@ -4,7 +4,6 @@ import com.chyzman.reboundless.mixin.client.access.KeyBindingAccessor;
 import com.chyzman.reboundless.pond.KeyBindingDuck;
 import com.chyzman.reboundless.util.ExtraKeyBindingData;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.option.StickyKeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;

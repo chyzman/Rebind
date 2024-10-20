@@ -4,6 +4,7 @@
   "package": "com.chyzman.reboundless.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "common.CollapsibleContainerAccessor",
     "common.access.ScrollContainerAccessor"
   ],
   "client": [

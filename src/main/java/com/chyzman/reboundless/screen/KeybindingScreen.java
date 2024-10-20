@@ -84,7 +84,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                 flowLayout -> {},
                 category -> {
                     var keys = sortedKeys.stream().filter(k -> k.getCategory().equals(category)).toList();
-                    var container = Containers.collapsible(
+                    var container = new CategoryCollapsibleContainer(
                             Sizing.fill(),
                             Sizing.content(),
                             Text.translatable(category),
@@ -139,7 +139,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                                 .child(
                                         Containers.verticalFlow(Sizing.fixed(45), Sizing.fill())
                                                 .child(
-                                                        Components.button(Text.literal("\uD83D\uDDD1"), button -> {
+                                                        Components.button(Text.literal("☐"), button -> {
                                                                     var toggled = categoryComponents.values().stream().toList().getFirst().expanded();
                                                                     categoryComponents.values().forEach(container -> {
                                                                         if (container.expanded() == toggled) container.toggleExpansion();
@@ -252,17 +252,50 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     }
 
     @Environment(EnvType.CLIENT)
+    public class CategoryCollapsibleContainer extends CollapsibleContainer {
+        final Animation<Sizing> toggleAnimation;
+
+        protected CategoryCollapsibleContainer(Sizing horizontalSizing, Sizing verticalSizing, Text title, boolean expanded) {
+            super(horizontalSizing, verticalSizing, title, expanded);
+            this.contentLayout.verticalSizing(expanded ? Sizing.content() : Sizing.fixed(0));
+            this.toggleAnimation = this.contentLayout.verticalSizing().animate(500, Easing.CUBIC, expanded ? Sizing.fixed(0) : Sizing.content()).backwards();
+            this.toggleAnimation.finished().subscribe((direction, looping) -> {
+                if (direction.equals(expanded ? Animation.Direction.FORWARDS : Animation.Direction.BACKWARDS)) this.contentLayout.clearChildren();
+            });
+            this.contentLayout.verticalAlignment(VerticalAlignment.BOTTOM);
+        }
+
+        @Override
+        public void toggleExpansion() {
+            super.toggleExpansion();
+            this.toggleAnimation.reverse();
+        }
+    }
+
+    @Environment(EnvType.CLIENT)
     public class KeybindConfigurationComponent extends FlowLayout {
-        protected final KeyBinding keyBinding;
-        protected final KeyBindButtonComponent bindButton;
-        protected final ButtonComponent resetButton;
-        protected final CheckboxComponent toggledCheck;
-        protected boolean duplicateKey = false;
-        protected int overlappingModifiers = 0;
+        final KeyBinding keyBinding;
+
+        final KeyBindButtonComponent bindButton;
+
+        final FlowLayout headerFlow;
+        final ButtonComponent resetButton;
+        final ButtonComponent settingsButton;
+
+        final FlowLayout settingsFlow;
+        final CheckboxComponent toggledCheck;
+
+        boolean duplicateKey = false;
+        int overlappingModifiers = 0;
 
         protected KeybindConfigurationComponent(KeyBinding keyBinding) {
-            super(Sizing.fill(), Sizing.fixed(20), Algorithm.HORIZONTAL);
+            super(Sizing.fill(), Sizing.content(), Algorithm.VERTICAL);
             this.keyBinding = keyBinding;
+
+            this.headerFlow = Containers.horizontalFlow(Sizing.fill(), Sizing.fixed(20));
+            this.settingsFlow = Containers.horizontalFlow(Sizing.fill(), Sizing.fixed(0));
+            this.settingsFlow.verticalAlignment(VerticalAlignment.BOTTOM);
+
             this.bindButton = new KeyBindButtonComponent(
                     keyBinding.getBoundKeyLocalizedText(),
                     button -> {
@@ -283,18 +316,45 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                     }
             );
             this.resetButton.sizing(Sizing.fixed(20));
-            this.toggledCheck = Components.checkbox(Text.empty()).checked(keyBinding.reboundless$getExtraData().toggled().isTrue());
-            this.toggledCheck.onChanged(nowChecked -> keyBinding.reboundless$getExtraData().toggled().setValue(nowChecked));
-            this.child(Components.label(Text.translatable(keyBinding.getTranslationKey())).shadow(true)
-                               .positioning(Positioning.relative(0, 50)));
-            this.child(
+
+            var settingsAnim = settingsFlow
+                    .verticalSizing()
+                    .animate(500, Easing.CUBIC, Sizing.content())
+                    .backwards();
+            settingsAnim.finished().subscribe((direction, looping) -> {
+                if (direction.equals(Animation.Direction.BACKWARDS)) settingsFlow.remove();
+            });
+
+            this.settingsButton = Components.button(
+                    Text.literal("⚙"),
+                    button -> {
+                        if (!settingsFlow.hasParent()) this.child(settingsFlow);
+                        settingsAnim.reverse();
+                    }
+            );
+            this.settingsButton.sizing(Sizing.fixed(20));
+
+            this.headerFlow.child(
+                    Components.label(Text.translatable(keyBinding.getTranslationKey()))
+                            .shadow(true)
+                            .positioning(Positioning.relative(0, 50))
+            );
+            this.headerFlow.child(
                     Containers.horizontalFlow(Sizing.content(), Sizing.fill())
                             .child(bindButton.margins(Insets.right(3)))
-                            .child(resetButton)
-                            .child(toggledCheck)
+                            .child(resetButton.margins(Insets.right(3)))
+                            .child(settingsButton)
                             .positioning(Positioning.relative(100, 50))
                             .verticalAlignment(VerticalAlignment.CENTER)
             );
+
+            this.child(headerFlow);
+
+            this.toggledCheck = Components.checkbox(Text.translatable("controls.keybinds.keybind.toggled")).checked(keyBinding.reboundless$getExtraData().toggled().isTrue());
+            this.toggledCheck.onChanged(nowChecked -> keyBinding.reboundless$getExtraData().toggled().setValue(nowChecked));
+
+            settingsFlow.child(toggledCheck);
+
             keybindComponents.put(keyBinding, this);
             update();
         }
