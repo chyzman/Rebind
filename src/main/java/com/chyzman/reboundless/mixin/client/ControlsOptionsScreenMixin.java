@@ -1,6 +1,6 @@
 package com.chyzman.reboundless.mixin.client;
 
-import com.chyzman.reboundless.screen.KeybindingScreen;
+import com.chyzman.reboundless.screen.impl.KeybindingScreen;
 import com.chyzman.reboundless.util.ScreenModificationUtil;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.ControlsOptionsScreen;

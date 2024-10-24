@@ -1,6 +1,6 @@
 package com.chyzman.reboundless.mixin.common;
 
-import com.chyzman.reboundless.screen.KeybindingScreen;
+import com.chyzman.reboundless.screen.impl.KeybindingScreen;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.wispforest.owo.ui.container.CollapsibleContainer;

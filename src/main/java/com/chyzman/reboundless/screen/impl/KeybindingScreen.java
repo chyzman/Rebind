@@ -1,16 +1,14 @@
-package com.chyzman.reboundless.screen;
+package com.chyzman.reboundless.screen.impl;
 
 import com.chyzman.reboundless.mixin.client.access.KeyBindingAccessor;
 import com.chyzman.reboundless.mixin.common.access.ScrollContainerAccessor;
+import com.chyzman.reboundless.screen.component.ToggleButtonComponent;
 import com.chyzman.reboundless.util.ScreenUtil;
 import io.wispforest.owo.ui.base.BaseOwoScreen;
 import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.component.CheckboxComponent;
 import io.wispforest.owo.ui.component.Components;
-import io.wispforest.owo.ui.container.CollapsibleContainer;
-import io.wispforest.owo.ui.container.Containers;
-import io.wispforest.owo.ui.container.FlowLayout;
-import io.wispforest.owo.ui.container.ScrollContainer;
+import io.wispforest.owo.ui.container.*;
 import io.wispforest.owo.ui.core.*;
 import io.wispforest.owo.ui.util.CommandOpenedScreen;
 import net.fabricmc.api.EnvType;
@@ -24,6 +22,7 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Colors;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.NotNull;
@@ -284,10 +283,11 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
         final ButtonComponent settingsButton;
 
         final FlowLayout settingsFlow;
-        final CheckboxComponent toggledCheck;
+        final ToggleButtonComponent toggle;
+        final ToggleButtonComponent invert;
 
-        boolean duplicateKey = false;
-        int overlappingModifiers = 0;
+        boolean fullyOverlaps = false;
+        boolean partiallyOverlaps = false;
 
         protected KeybindConfigurationComponent(KeyBinding keyBinding) {
             super(Sizing.fill(), Sizing.content(), Algorithm.VERTICAL);
@@ -308,7 +308,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                     }
             );
             this.resetButton = Components.button(
-                    Text.literal("⇄"),
+                    Text.translatable("controls.reboundless.keybinds.keybind.reset"),
                     button -> {
                         focusedBinding = null;
                         gameOptions.setKeyCode(keyBinding, keyBinding.getDefaultKey());
@@ -351,10 +351,33 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
 
             this.child(headerFlow);
 
-            this.toggledCheck = Components.checkbox(Text.translatable("controls.keybinds.keybind.toggled")).checked(keyBinding.reboundless$getExtraData().toggled().isTrue());
-            this.toggledCheck.onChanged(nowChecked -> keyBinding.reboundless$getExtraData().toggled().setValue(nowChecked));
+            this.toggle = ScreenUtil.toggleHoldToggler(
+                    keyBinding.reboundless$getExtraData().toggled().isTrue(),
+                    nowChecked -> keyBinding.reboundless$getExtraData().toggled().setValue(nowChecked)
+            );
 
-            settingsFlow.child(toggledCheck);
+            this.invert = new ToggleButtonComponent(
+                    Text.translatable("options.true"),
+                    Text.translatable("options.false"),
+                    keyBinding.reboundless$getExtraData().inverted().isTrue()
+            );
+            this.invert.onChanged().subscribe(nowChecked -> keyBinding.reboundless$getExtraData().inverted().setValue(nowChecked));
+
+            this.settingsFlow.child(
+                    Containers.verticalFlow(Sizing.content(), Sizing.content())
+                            .child(ScreenUtil.wrapIn20HeightFlow(
+                                    Components.label(Text.translatable("controls.reboundless.keybinds.keybind.toggled"))
+                                            .shadow(true).margins(Insets.right(3))))
+                            .child(ScreenUtil.wrapIn20HeightFlow(
+                                    Components.label(Text.translatable("controls.reboundless.keybinds.keybind.inverted"))
+                                            .shadow(true).margins(Insets.right(3))))
+            ).child(
+                    Containers.verticalFlow(Sizing.content(), Sizing.content())
+                            .child(ScreenUtil.wrapIn20HeightFlow(toggle))
+                            .child(ScreenUtil.wrapIn20HeightFlow(invert))
+            );
+            this.settingsFlow.padding(Insets.left(10));
+            this.settingsFlow.surface(ScreenUtil.COLLAPSING_SURFACE);
 
             keybindComponents.put(keyBinding, this);
             update();
@@ -363,7 +386,8 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
         public void update() {
             var extraData = keyBinding.reboundless$getExtraData();
             bindButton.update();
-            toggledCheck.checked(extraData.toggled().isTrue());
+            toggle.enabled(extraData.toggled().isTrue());
+            invert.enabled(extraData.inverted().isTrue());
             resetButton.active(!keyBinding.isDefault());
         }
 
@@ -371,9 +395,13 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
         protected void drawChildren(OwoUIDrawContext context, int mouseX, int mouseY, float partialTicks, float delta, List<? extends Component> children) {
             super.drawChildren(context, mouseX, mouseY, partialTicks, delta, children);
 
-            if (duplicateKey) {
-                int m = bindButton.x() - 6;
-                context.fill(m, y + 1, m + 3, y + height - 1, 100, Color.ofDye(DyeColor.ORANGE).argb());
+            int m = bindButton.x() - 6;
+            if (fullyOverlaps) {
+                context.fill(m, y + 1, m + 3, y + bindButton.height() - 1, 100, Colors.RED);
+                m -= 4;
+            }
+            if (partiallyOverlaps) {
+                context.fill(m, y + 1, m + 3, y + bindButton.height() - 1, 100, Color.ofDye(DyeColor.ORANGE).argb());
             }
         }
 
@@ -393,23 +421,35 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
             }
 
             public void update() {
-                duplicateKey = false;
+                fullyOverlaps = false;
+                partiallyOverlaps = false;
                 var tooltip = Text.empty();
                 if (!keyBinding.isUnbound()) {
                     var possibleConflicts = REAL_KEYS_MAP.get(((KeyBindingAccessor) keyBinding).reboundless$getBoundKey());
-                    possibleConflicts.forEach(possibleConfict -> {
-                        if (possibleConfict != keyBinding) {
-                            if (duplicateKey) tooltip.append(Text.literal(", "));
-                            duplicateKey = true;
+                    for (KeyBinding possibleConfict : possibleConflicts) {
+                        var conflictType = keyBinding.reboundless$conflictsWith(possibleConfict);
+                        if (conflictType == ScreenUtil.ConflictType.GUARANTEED) {
+                            if (!fullyOverlaps) {
+                                tooltip = Text.empty();
+                            } else {
+                                tooltip.append(Text.literal(", "));
+                            }
+                            fullyOverlaps = true;
                             tooltip.append(Text.translatable(possibleConfict.getTranslationKey()));
+                        } else if (conflictType == ScreenUtil.ConflictType.POSSIBLE) {
+                            if (!fullyOverlaps) {
+                                if (partiallyOverlaps) tooltip.append(Text.literal(", "));
+                                tooltip.append(Text.translatable(possibleConfict.getTranslationKey()));
+                            }
+                            partiallyOverlaps = true;
                         }
-                    });
+                    }
                 }
                 var label = assembleTextFromModifiers(keyBinding.reboundless$getExtraData().modifiers());
                 label.append(keyBinding.getBoundKeyLocalizedText());
-                if (duplicateKey) {
-                    label = Text.literal("[ ").append(label.formatted(Formatting.WHITE)).append(" ]").withColor(DyeColor.ORANGE.getEntityColor());
-                    setTooltip(Tooltip.of(Text.translatable("controls.keybinds.duplicateKeybinds", tooltip)));
+                if (fullyOverlaps || partiallyOverlaps) {
+                    label = Text.literal("[ ").append(label.formatted(Formatting.WHITE)).append(" ]").withColor(fullyOverlaps ? Formatting.RED.getColorValue() : DyeColor.ORANGE.getEntityColor());
+                    setTooltip(Tooltip.of(Text.translatable("controls.keybinds.keybind." + (fullyOverlaps ? "conflicts" : "possibleConflicts"), tooltip)));
                 }
                 this.setMessage(label);
             }

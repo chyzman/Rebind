@@ -3,6 +3,7 @@ package com.chyzman.reboundless.mixin.client;
 import com.chyzman.reboundless.mixin.client.access.KeyBindingAccessor;
 import com.chyzman.reboundless.pond.KeyBindingDuck;
 import com.chyzman.reboundless.util.ExtraKeyBindingData;
+import com.chyzman.reboundless.util.ScreenUtil;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.spongepowered.asm.mixin.Final;
@@ -14,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.HashSet;
 import java.util.Map;
 
 import static com.chyzman.reboundless.Reboundless.CURRENTLY_HELD_KEYS;
@@ -23,7 +25,10 @@ import static com.chyzman.reboundless.Reboundless.REAL_KEYS_MAP;
 public abstract class KeyBindingMixin implements KeyBindingDuck {
     @Shadow @Final private static Map<String, KeyBinding> KEYS_BY_ID;
     @Shadow private InputUtil.Key boundKey;
-    @Shadow public abstract boolean isPressed();
+
+    @Shadow
+    public abstract boolean isPressed();
+
     @Shadow private boolean pressed;
 
     @Unique private ExtraKeyBindingData extraData = new ExtraKeyBindingData();
@@ -86,6 +91,11 @@ public abstract class KeyBindingMixin implements KeyBindingDuck {
         cir.setReturnValue(cir.getReturnValue() && extraData.equals(extraDataDefaults));
     }
 
+    @Inject(method = "isPressed", at = @At("RETURN"), cancellable = true)
+    private void makeInvertedWork(CallbackInfoReturnable<Boolean> cir) {
+        cir.setReturnValue(cir.getReturnValue() != extraData.inverted().isTrue());
+    }
+
     @Override
     public ExtraKeyBindingData reboundless$getExtraData() {
         return extraData;
@@ -106,5 +116,17 @@ public abstract class KeyBindingMixin implements KeyBindingDuck {
     public KeyBinding reboundless$setExtraDataDefaults(ExtraKeyBindingData extraData) {
         this.extraDataDefaults = extraData;
         return (KeyBinding) (Object) this;
+    }
+
+    @Override
+    public ScreenUtil.ConflictType reboundless$conflictsWith(KeyBinding other) {
+        if (other == (Object) this) return ScreenUtil.ConflictType.NONE;
+        if (!((KeyBindingAccessor)other).reboundless$getBoundKey().equals(((KeyBindingAccessor)this).reboundless$getBoundKey())) return ScreenUtil.ConflictType.NONE;
+        var type = ScreenUtil.ConflictType.NONE;
+        var thisHashed = new HashSet<>(extraData.modifiers());
+        var otherHashed = new HashSet<>(other.reboundless$getExtraData().modifiers());
+        if (thisHashed.containsAll(otherHashed) || otherHashed.containsAll(thisHashed)) type = ScreenUtil.ConflictType.POSSIBLE;
+        if (thisHashed.equals(otherHashed)) type = ScreenUtil.ConflictType.GUARANTEED;
+        return type;
     }
 }

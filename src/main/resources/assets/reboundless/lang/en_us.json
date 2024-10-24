@@ -1,5 +1,14 @@
 {
-  "controls.keybinds.keybind.toggled": "Toggled",
+  "controls.reboundless.keybinds.keybind.reset": "⇄",
+
+  "controls.reboundless.keybinds.keybind.toggled": "Input Mode",
+  "controls.reboundless.keybinds.keybind.inverted": "Inverted",
+
+  "controls.keybinds.keybind.possibleConflicts": "Might overlap with:\n%s",
+  "controls.keybinds.keybind.conflicts": "Probably overlaps with:\n%s",
+
+  "options.true": "True",
+  "options.false": "False",
 
   "key.mouse.101": "Scroll Up",
   "key.mouse.102": "Scroll Down",
