@@ -2,6 +2,8 @@ package com.chyzman.reboundless.screen.impl;
 
 import com.chyzman.reboundless.mixin.client.access.KeyBindingAccessor;
 import com.chyzman.reboundless.mixin.common.access.ScrollContainerAccessor;
+import com.chyzman.reboundless.screen.component.ConfirmingButtonComponent;
+import com.chyzman.reboundless.screen.component.SmoothCollapsibleContainer;
 import com.chyzman.reboundless.screen.component.ToggleButtonComponent;
 import com.chyzman.reboundless.util.ScreenUtil;
 import io.wispforest.owo.ui.base.BaseOwoScreen;
@@ -14,6 +16,7 @@ import io.wispforest.owo.ui.util.CommandOpenedScreen;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.navigation.GuiNavigationPath;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.EntryListWidget;
@@ -76,7 +79,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                 flowLayout -> {},
                 category -> {
                     var keys = sortedKeys.stream().filter(k -> k.getCategory().equals(category)).toList();
-                    var container = new CategoryCollapsibleContainer(
+                    var container = new SmoothCollapsibleContainer(
                             Sizing.fill(),
                             Sizing.content(),
                             Text.translatable(category),
@@ -252,34 +255,13 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     }
 
     @Environment(EnvType.CLIENT)
-    public class CategoryCollapsibleContainer extends CollapsibleContainer {
-        final Animation<Sizing> toggleAnimation;
-
-        protected CategoryCollapsibleContainer(Sizing horizontalSizing, Sizing verticalSizing, Text title, boolean expanded) {
-            super(horizontalSizing, verticalSizing, title, expanded);
-            this.contentLayout.verticalSizing(expanded ? Sizing.content() : Sizing.fixed(0));
-            this.toggleAnimation = this.contentLayout.verticalSizing().animate(500, Easing.CUBIC, expanded ? Sizing.fixed(0) : Sizing.content()).backwards();
-            this.toggleAnimation.finished().subscribe((direction, looping) -> {
-                if (direction.equals(expanded ? Animation.Direction.FORWARDS : Animation.Direction.BACKWARDS)) this.contentLayout.clearChildren();
-            });
-            this.contentLayout.verticalAlignment(VerticalAlignment.BOTTOM);
-        }
-
-        @Override
-        public void toggleExpansion() {
-            super.toggleExpansion();
-            this.toggleAnimation.reverse();
-        }
-    }
-
-    @Environment(EnvType.CLIENT)
     public class KeybindConfigurationComponent extends FlowLayout {
         final KeyBinding keyBinding;
 
         final KeyBindButtonComponent bindButton;
 
         final FlowLayout headerFlow;
-        final ButtonComponent resetButton;
+        final ConfirmingButtonComponent resetButton;
         final ButtonComponent settingsButton;
 
         final FlowLayout settingsFlow;
@@ -307,7 +289,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                         }
                     }
             );
-            this.resetButton = Components.button(
+            this.resetButton = new ConfirmingButtonComponent(
                     Text.translatable("controls.reboundless.keybinds.keybind.reset"),
                     button -> {
                         focusedBinding = null;
@@ -421,6 +403,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
             }
 
             public void update() {
+                setTooltip(null);
                 fullyOverlaps = false;
                 partiallyOverlaps = false;
                 var tooltip = Text.empty();
