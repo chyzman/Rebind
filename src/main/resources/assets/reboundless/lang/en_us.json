@@ -13,5 +13,7 @@
   "key.mouse.101": "Scroll Up",
   "key.mouse.102": "Scroll Down",
   "key.mouse.103": "Scroll Left",
-  "key.mouse.104": "Scroll Right"
+  "key.mouse.104": "Scroll Right",
+
+  "tooltip.reboundless.keybind.reset.confirm": "Are you sure you want to reset this keybind?"
 }

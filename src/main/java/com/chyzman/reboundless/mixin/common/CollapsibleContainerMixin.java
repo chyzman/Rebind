@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import java.util.Collection;
 
 @Mixin(CollapsibleContainer.class)
-public abstract class CollapsibleContainerAccessor {
+public abstract class CollapsibleContainerMixin {
 
     @Shadow(remap = false) @Final protected FlowLayout contentLayout;
 

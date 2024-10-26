@@ -6,6 +6,7 @@ import io.wispforest.owo.ui.core.OwoUIDrawContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.tooltip.HoveredTooltipPositioner;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -16,16 +17,21 @@ public class ConfirmingButtonComponent extends ButtonComponent {
 
     public ConfirmingButtonComponent(Text message, Consumer<ButtonComponent> onPress) {
         super(message, onPress);
-        this.focusLost().subscribe(() -> confirming = false);
+        this.focusLost().subscribe(() -> {
+            confirming = false;
+            this.setTooltip(null);
+        });
     }
 
     @Override
     public void onClick(double mouseX, double mouseY) {
         if (confirming) {
             confirming = false;
+            this.setTooltip(null);
             super.onClick(mouseX, mouseY);
         } else {
             confirming = true;
+            this.setTooltip(Tooltip.of(Text.translatable("tooltip.reboundless.keybind.reset.confirm")));
         }
     }
 
@@ -42,9 +48,5 @@ public class ConfirmingButtonComponent extends ButtonComponent {
         } else {
             context.drawText(textRenderer, this.getMessage(), (int) (this.getX() + this.width / 2f - textRenderer.getWidth(this.getMessage()) / 2f), (int) (this.getY() + (this.height - 8) / 2f), color, false);
         }
-
-        var tooltip = ((ClickableWidgetAccessor) this).owo$getTooltip();
-        if (this.hovered && tooltip.getTooltip() != null)
-            context.drawTooltip(textRenderer, tooltip.getTooltip().getLines(MinecraftClient.getInstance()), HoveredTooltipPositioner.INSTANCE, mouseX, mouseY);
     }
 }

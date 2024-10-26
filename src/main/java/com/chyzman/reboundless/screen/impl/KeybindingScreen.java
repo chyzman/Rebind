@@ -2,13 +2,13 @@ package com.chyzman.reboundless.screen.impl;
 
 import com.chyzman.reboundless.mixin.client.access.KeyBindingAccessor;
 import com.chyzman.reboundless.mixin.common.access.ScrollContainerAccessor;
+import com.chyzman.reboundless.screen.component.CollapsibleDropdownComponent;
 import com.chyzman.reboundless.screen.component.ConfirmingButtonComponent;
 import com.chyzman.reboundless.screen.component.SmoothCollapsibleContainer;
 import com.chyzman.reboundless.screen.component.ToggleButtonComponent;
 import com.chyzman.reboundless.util.ScreenUtil;
 import io.wispforest.owo.ui.base.BaseOwoScreen;
 import io.wispforest.owo.ui.component.ButtonComponent;
-import io.wispforest.owo.ui.component.CheckboxComponent;
 import io.wispforest.owo.ui.component.Components;
 import io.wispforest.owo.ui.container.*;
 import io.wispforest.owo.ui.core.*;
@@ -16,7 +16,6 @@ import io.wispforest.owo.ui.util.CommandOpenedScreen;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.navigation.GuiNavigationPath;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.EntryListWidget;
@@ -41,6 +40,7 @@ import static com.chyzman.reboundless.Reboundless.REAL_KEYS_MAP;
 @Environment(EnvType.CLIENT)
 public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements CommandOpenedScreen {
     public static final Map<String, Boolean> categoryStates = new HashMap<>();
+    public static boolean sortingExpanded = false;
     public static double scrollAmount = 0;
 
     @Nullable
@@ -74,6 +74,12 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
 
         var categories = sortedKeys.stream().map(KeyBinding::getCategory).distinct().toList();
 
+        var sortingHolder = new CollapsibleDropdownComponent(Sizing.fill(), sortingExpanded);
+        sortingHolder.onToggled().subscribe(nowExpanded -> sortingExpanded = nowExpanded);
+
+        sortingHolder.child(Components.label(Text.translatable("controls.keybinds.sorting")).shadow(true));
+
+
         var list = Components.list(
                 categories,
                 flowLayout -> {},
@@ -102,6 +108,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                 Sizing.fill(),
                 Sizing.fill(),
                 Containers.verticalFlow(Sizing.fill(), Sizing.content())
+                        .child(sortingHolder)
                         .child(list)
                         .padding(Insets.of(3).withRight(16))
         );

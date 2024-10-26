@@ -1,6 +1,5 @@
 package com.chyzman.reboundless.screen.component;
 
-import io.wispforest.owo.mixin.ui.access.ClickableWidgetAccessor;
 import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.core.OwoUIDrawContext;
 import io.wispforest.owo.ui.core.Sizing;
@@ -8,7 +7,6 @@ import io.wispforest.owo.util.EventSource;
 import io.wispforest.owo.util.EventStream;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.tooltip.HoveredTooltipPositioner;
 import net.minecraft.text.Text;
 
 public class ToggleButtonComponent extends ButtonComponent {
@@ -63,10 +61,6 @@ public class ToggleButtonComponent extends ButtonComponent {
         } else {
             context.drawText(textRenderer, text, (int) (this.getX() + this.width / 2f - textRenderer.getWidth(this.getMessage()) / 2f), (int) (this.getY() + (this.height - 8) / 2f), color, false);
         }
-
-        var tooltip = ((ClickableWidgetAccessor) this).owo$getTooltip();
-        if (this.hovered && tooltip.getTooltip() != null)
-            context.drawTooltip(textRenderer, tooltip.getTooltip().getLines(MinecraftClient.getInstance()), HoveredTooltipPositioner.INSTANCE, mouseX, mouseY);
     }
 
     public interface OnChanged {
