@@ -32,10 +32,11 @@ public class CollapsibleDropdownComponent extends FlowLayout {
 
 
     public CollapsibleDropdownComponent(Sizing horizontalSizing, boolean expanded) {
-        super(horizontalSizing,  Sizing.content(), Algorithm.VERTICAL);
+        super(horizontalSizing, Sizing.content(), Algorithm.VERTICAL);
 
-        this.toggleLayout = Containers.horizontalFlow(Sizing.fill(), Sizing.content());
+        this.toggleLayout = Containers.horizontalFlow(Sizing.fixed(80), Sizing.content());
         this.toggleLayout.alignment(HorizontalAlignment.CENTER, VerticalAlignment.CENTER);
+        this.toggleLayout.cursorStyle(CursorStyle.HAND);
 
         this.spinnyBoi = new ReallySpinnyBoiComponent();
         this.toggleLayout.child(spinnyBoi);
@@ -44,12 +45,15 @@ public class CollapsibleDropdownComponent extends FlowLayout {
         this.spinnyBoi.targetRotation = expanded ? -90 : 90;
         this.spinnyBoi.rotation = this.spinnyBoi.targetRotation;
 
-        this.contentLayout = Containers.verticalFlow(Sizing.fill(), expanded ? Sizing.content() : Sizing.fixed(0));
+        this.contentLayout = Containers.verticalFlow(Sizing.content(), expanded ? Sizing.content() : Sizing.fixed(0));
+        this.contentLayout.padding(Insets.top(3));
 
         this.toggleAnimation = this.contentLayout.verticalSizing().animate(500, Easing.CUBIC, expanded ? Sizing.fixed(0) : Sizing.content()).backwards();
         this.toggleAnimation.finished().subscribe((direction, looping) -> {
             if (direction.equals(expanded ? Animation.Direction.FORWARDS : Animation.Direction.BACKWARDS)) this.contentLayout.clearChildren();
         });
+
+        this.horizontalAlignment(HorizontalAlignment.CENTER);
 
         super.child(this.contentLayout);
 
@@ -169,7 +173,7 @@ public class CollapsibleDropdownComponent extends FlowLayout {
 
         public ReallySpinnyBoiComponent() {
             super(Text.literal(">"));
-            this.margins(Insets.of(0, 0, 0, 0));
+            this.margins(Insets.of(0, 0, 3, 1));
             this.cursorStyle(CursorStyle.HAND);
         }
 

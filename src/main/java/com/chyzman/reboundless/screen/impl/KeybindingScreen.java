@@ -2,11 +2,9 @@ package com.chyzman.reboundless.screen.impl;
 
 import com.chyzman.reboundless.mixin.client.access.KeyBindingAccessor;
 import com.chyzman.reboundless.mixin.common.access.ScrollContainerAccessor;
-import com.chyzman.reboundless.screen.component.CollapsibleDropdownComponent;
-import com.chyzman.reboundless.screen.component.ConfirmingButtonComponent;
-import com.chyzman.reboundless.screen.component.SmoothCollapsibleContainer;
-import com.chyzman.reboundless.screen.component.ToggleButtonComponent;
+import com.chyzman.reboundless.screen.component.*;
 import com.chyzman.reboundless.util.ScreenUtil;
+import com.chyzman.reboundless.util.StringUtil;
 import io.wispforest.owo.ui.base.BaseOwoScreen;
 import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.component.Components;
@@ -43,6 +41,9 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     public static boolean sortingExpanded = false;
     public static double scrollAmount = 0;
 
+    public static boolean useCategories = true;
+    public static String searchTerm = "";
+
     @Nullable
     protected final Screen parent;
     protected final GameOptions gameOptions;
@@ -53,7 +54,16 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     protected final Map<KeyBinding, KeybindConfigurationComponent> keybindComponents = new HashMap<>();
     protected final Map<String, CollapsibleContainer> categoryComponents = new HashMap<>();
 
+    protected FlowLayout leftPanel;
     protected ScrollContainer<ParentComponent> scrollContainer = null;
+    protected FlowLayout rightPanel;
+
+    protected FlowLayout scrollFlow;
+
+    protected CollapsibleDropdownComponent sortingFlow;
+    protected FlowLayout optionsFlow;
+
+    protected SearchTextBoxComponent searchBar;
 
     public KeybindingScreen(@Nullable Screen parent, GameOptions gameOptions) {
         super();
@@ -70,54 +80,60 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     @SuppressWarnings("DataFlowIssue")
     protected void build(FlowLayout rootComponent) {
 
-        var sortedKeys = Arrays.stream(gameOptions.allKeys).sorted(KeyBinding::compareTo).toList();
+        this.sortingFlow = new CollapsibleDropdownComponent(Sizing.content(), sortingExpanded);
+        this.sortingFlow.onToggled().subscribe(nowExpanded -> sortingExpanded = nowExpanded);
 
-        var categories = sortedKeys.stream().map(KeyBinding::getCategory).distinct().toList();
+        var categoriesCheck = Components.smallCheckbox(Text.translatable("controls.keybinds.categories")).checked(useCategories);
+        categoriesCheck.onChanged().subscribe(checked -> {
+            useCategories = checked;
+            regenerateOptionsList();
+        });
 
-        var sortingHolder = new CollapsibleDropdownComponent(Sizing.fill(), sortingExpanded);
-        sortingHolder.onToggled().subscribe(nowExpanded -> sortingExpanded = nowExpanded);
+        this.sortingFlow.child(categoriesCheck);
 
-        sortingHolder.child(Components.label(Text.translatable("controls.keybinds.sorting")).shadow(true));
-
-
-        var list = Components.list(
-                categories,
-                flowLayout -> {},
-                category -> {
-                    var keys = sortedKeys.stream().filter(k -> k.getCategory().equals(category)).toList();
-                    var container = new SmoothCollapsibleContainer(
-                            Sizing.fill(),
-                            Sizing.content(),
-                            Text.translatable(category),
-                            categoryStates.getOrDefault(category, true)
-                    ).child(Components.list(
-                            keys,
-                            flowLayout -> {},
-                            KeybindConfigurationComponent::new,
-                            true
-                    )).<CollapsibleContainer>configure(collapsible -> collapsible.onToggled().subscribe(nowExpanded -> {
-                        categoryStates.put(category, nowExpanded);
-                    }));
-                    categoryComponents.put(category, container);
-                    return container;
-                },
-                true
-        );
+        this.scrollFlow = Containers.verticalFlow(Sizing.fill(), Sizing.content());
+        this.scrollFlow
+                .child(this.sortingFlow)
+                .padding(Insets.of(3).withRight(16).withTop(0))
+                .horizontalAlignment(HorizontalAlignment.CENTER);
 
         this.scrollContainer = Containers.verticalScroll(
+                Sizing.expand(),
                 Sizing.fill(),
-                Sizing.fill(),
-                Containers.verticalFlow(Sizing.fill(), Sizing.content())
-                        .child(sortingHolder)
-                        .child(list)
-                        .padding(Insets.of(3).withRight(16))
+                this.scrollFlow
         );
+
+        regenerateOptionsList();
+
         ((ScrollContainerAccessor) scrollContainer).reboundless$setCurrentScrollPosition(scrollAmount);
         ((ScrollContainerAccessor) scrollContainer).reboundless$setScrollOffset(scrollAmount);
         scrollContainer
                 .scrollbar(ScrollContainer.Scrollbar.vanillaFlat())
                 .scrollbarThiccness(6)
                 .padding(Insets.horizontal(1));
+
+        this.leftPanel = Containers.verticalFlow(Sizing.fixed(40), Sizing.fill());
+        this.leftPanel.child(
+                        Components.button(Text.literal("☐"), button -> {
+                                    var shouldCollapse = categoryStates.values().stream().allMatch(b -> b);
+                                    categoryComponents.values().forEach(container -> {
+                                        if (container.expanded() == shouldCollapse) container.toggleExpansion();
+                                    });
+                                })
+                                .sizing(Sizing.fixed(20))
+                )
+                .margins(Insets.of(5));
+
+        this.rightPanel = Containers.verticalFlow(Sizing.content(), Sizing.fill());
+        this.rightPanel.child(Containers.horizontalFlow(Sizing.fixed(50), Sizing.fixed(0)));
+
+        searchBar = new SearchTextBoxComponent(Sizing.fill(50));
+        searchBar.text(searchTerm);
+        searchBar.setPlaceholder(Text.translatable("gui.socialInteractions.search_hint").formatted(Formatting.GRAY));
+        searchBar.onChanged().subscribe(text -> {
+            searchTerm = text;
+            regenerateOptionsList();
+        });
 
         rootComponent
                 .child(
@@ -136,22 +152,13 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                         Containers.stack(Sizing.fill(100), Sizing.expand())
                                 .child(
                                         Containers.horizontalFlow(Sizing.fill(), Sizing.fill())
-                                                .child(scrollContainer)
-                                                .padding(Insets.horizontal(50))
                                                 .surface(ScreenUtil.translucentTiledSurface(this.client.world == null ? EntryListWidget.MENU_LIST_BACKGROUND_TEXTURE : EntryListWidget.INWORLD_MENU_LIST_BACKGROUND_TEXTURE, 16, 16))
                                 )
                                 .child(
-                                        Containers.verticalFlow(Sizing.fixed(45), Sizing.fill())
-                                                .child(
-                                                        Components.button(Text.literal("☐"), button -> {
-                                                                    var shouldCollapse = categoryStates.values().stream().allMatch(b -> b);
-                                                                    categoryComponents.values().forEach(container -> {
-                                                                        if (container.expanded() == shouldCollapse) container.toggleExpansion();
-                                                                    });
-                                                                })
-                                                                .sizing(Sizing.fixed(20))
-                                                )
-                                                .margins(Insets.of(5))
+                                        Containers.horizontalFlow(Sizing.fill(), Sizing.fill())
+                                                .child(leftPanel)
+                                                .child(scrollContainer)
+                                                .child(rightPanel)
                                 )
                 )
                 .child(
@@ -159,8 +166,9 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                                 .surface(ScreenUtil.translucentTiledSurface(this.client.world == null ? FOOTER_SEPARATOR_TEXTURE : Screen.INWORLD_FOOTER_SEPARATOR_TEXTURE, 16, 2))
                 )
                 .child(Containers.verticalFlow(Sizing.fill(), Sizing.fixed(21))
+                               .child(searchBar)
                                .<FlowLayout>configure(footer -> {
-                                   footer.alignment(HorizontalAlignment.RIGHT, VerticalAlignment.CENTER);
+                                   footer.verticalAlignment(VerticalAlignment.CENTER);
                                    footer.margins(Insets.of(5));
                                    footer.padding(Insets.horizontal(50));
                                }))
@@ -170,6 +178,49 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     public void updateKeybinds() {
         KeyBinding.updateKeysByCode();
         keybindComponents.forEach((keyBinding, component) -> component.update());
+    }
+
+    public void regenerateOptionsList() {
+        keybindComponents.clear();
+        categoryComponents.clear();
+        if (this.optionsFlow != null) this.optionsFlow.remove();
+
+        var sortedKeys = Arrays.stream(gameOptions.allKeys).sorted(KeyBinding::compareTo).toList();
+
+        var categories = sortedKeys.stream().map(KeyBinding::getCategory).distinct().toList();
+
+        this.optionsFlow = Containers.verticalFlow(Sizing.fill(), Sizing.content());
+
+        for (String category : categories) {
+            var keys = sortedKeys.stream().filter(k -> k.getCategory().equals(category)).toList();
+
+            SmoothCollapsibleContainer container = null;
+
+            var putOptionsHere = this.optionsFlow;
+
+            if (useCategories) {
+                container = new SmoothCollapsibleContainer(
+                        Sizing.fill(),
+                        Sizing.content(),
+                        Text.translatable(category),
+                        categoryStates.getOrDefault(category, true)
+                );
+                container.onToggled().subscribe(nowExpanded -> categoryStates.put(category, nowExpanded));
+
+                putOptionsHere = container;
+            }
+
+            for (KeyBinding key : keys) {
+                if (searchTerm.isBlank() || StringUtil.isValidForSearch(searchTerm, Text.translatable(key.getTranslationKey()).getString())) putOptionsHere.child(new KeybindConfigurationComponent(key));
+            }
+
+            if (useCategories && container != null && !container.collapsibleChildren().isEmpty()) {
+                this.optionsFlow.child(container);
+                categoryComponents.put(category, container);
+            }
+        }
+
+        this.scrollFlow.child(this.optionsFlow);
     }
 
     @Override
@@ -184,7 +235,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
             }
             return true;
         } else {
-            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE && !searchBar.isFocused()) {
                 this.close();
                 return true;
             }
@@ -234,6 +285,16 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     }
 
     @Override
+    public boolean charTyped(char chr, int modifiers) {
+        if (focusedBinding != null) return false;
+        if (this.uiAdapter.rootComponent.focusHandler() != null && !searchBar.isFocused()) {
+            this.uiAdapter.rootComponent.focusHandler().focus(searchBar, Component.FocusSource.MOUSE_CLICK);
+            return searchBar.charTyped(chr, modifiers);
+        }
+        return super.charTyped(chr, modifiers);
+    }
+
+    @Override
     @SuppressWarnings("DataFlowIssue")
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
         if (this.client.world == null) {
@@ -251,7 +312,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     @Override
     public void removed() {
         super.removed();
-        scrollAmount = ((ScrollContainerAccessor) scrollContainer).reboundless$getCurrentScrollPosition();
+        if (scrollContainer != null) scrollAmount = ((ScrollContainerAccessor) scrollContainer).reboundless$getCurrentScrollPosition();
     }
 
     @Override
@@ -342,7 +403,10 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
 
             this.toggle = ScreenUtil.toggleHoldToggler(
                     keyBinding.reboundless$getExtraData().toggled().isTrue(),
-                    nowChecked -> keyBinding.reboundless$getExtraData().toggled().setValue(nowChecked)
+                    nowChecked -> {
+                        keyBinding.reboundless$getExtraData().toggled().setValue(nowChecked);
+                        updateKeybinds();
+                    }
             );
 
             this.invert = new ToggleButtonComponent(
@@ -350,7 +414,10 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                     Text.translatable("options.false"),
                     keyBinding.reboundless$getExtraData().inverted().isTrue()
             );
-            this.invert.onChanged().subscribe(nowChecked -> keyBinding.reboundless$getExtraData().inverted().setValue(nowChecked));
+            this.invert.onChanged().subscribe(nowChecked -> {
+                keyBinding.reboundless$getExtraData().inverted().setValue(nowChecked);
+                updateKeybinds();
+            });
 
             this.settingsFlow.child(
                     Containers.verticalFlow(Sizing.content(), Sizing.content())
@@ -375,8 +442,8 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
         public void update() {
             var extraData = keyBinding.reboundless$getExtraData();
             bindButton.update();
-            toggle.enabled(extraData.toggled().isTrue());
-            invert.enabled(extraData.inverted().isTrue());
+            if (toggle.enabled() != extraData.toggled().isTrue()) toggle.enabled(extraData.toggled().isTrue());
+            if (invert.enabled() != extraData.inverted().isTrue()) invert.enabled(extraData.inverted().isTrue());
             resetButton.active(!keyBinding.isDefault());
         }
 
