@@ -1,6 +1,7 @@
 package com.chyzman.reboundless.screen.impl;
 
 import com.chyzman.reboundless.api.CategoryMode;
+import com.chyzman.reboundless.mixin.client.access.InputUtilKeyAccessor;
 import com.chyzman.reboundless.mixin.client.access.KeyBindingAccessor;
 import com.chyzman.reboundless.mixin.common.access.ScrollContainerAccessor;
 import com.chyzman.reboundless.screen.component.*;
@@ -105,45 +106,90 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                 .scrollbarThiccness(6)
                 .padding(Insets.horizontal(1));
 
-        this.leftPanel = Containers.verticalFlow(Sizing.fixed(40), Sizing.fill());
-        this.leftPanel.child(
-                        Components.button(Text.literal("☐"), button -> {
-                                    var shouldCollapse = categoryStates.values().stream().allMatch(b -> b);
-                                    categoryComponents.values().forEach(container -> {
-                                        if (container.expanded() == shouldCollapse) container.toggleExpansion();
-                                    });
-                                })
-                                .sizing(Sizing.fixed(20))
+        var leftPopout = CollapsiblePopoutComponent.right(Sizing.expand(), false, Sizing.content());
+        leftPopout.child(
+                        Containers.verticalScroll(
+                                Sizing.fixed(100),
+                                Sizing.fill(),
+                                Components.list(
+                                        InputUtilKeyAccessor.reboundless$getKeysMap().values().stream().sorted(Comparator.comparing(key -> key.getLocalizedText().getString())).toList(),
+                                        flowLayout -> {},
+                                        key -> {
+                                            return Components.label(key.getLocalizedText());
+                                        },
+                                        true
+                                )
+                        )
                 )
-                .margins(Insets.of(5));
+                .margins(Insets.top(3));
+
+        var rightPopout = CollapsiblePopoutComponent.left(Sizing.expand(), false, Sizing.fixed(105));
+        rightPopout.child(
+                        Containers.verticalFlow(Sizing.fixed(100), Sizing.content())
+                                .child(
+                                        Components.button(Text.translatable("controls.reboundless.keybinds.resetAll"), button -> {
+                                                    rootComponent.child(
+                                                            ScreenUtil.displayConfirmationOverlay(
+                                                                    Text.translatable("controls.reboundless.keybinds.resetAll.confirm"),
+                                                                    () -> {
+                                                                        for (KeyBinding keyBinding : this.gameOptions.allKeys) {
+                                                                            keyBinding.reboundless$setToDefault();
+                                                                        }
+                                                                        updateKeybinds();
+                                                                    }
+                                                            )
+                                                    );
+                                                })
+                                                .horizontalSizing(Sizing.fill())
+                                )
+                                .child(
+                                        Components.button(Text.translatable("controls.reboundless.keybinds.clearAll"), button -> {
+                                                    rootComponent.child(
+                                                            ScreenUtil.displayConfirmationOverlay(
+                                                                    Text.translatable("controls.reboundless.keybinds.clearAll.confirm"),
+                                                                    () -> {
+                                                                        for (KeyBinding keyBinding : this.gameOptions.allKeys) {
+                                                                            keyBinding.reboundless$clear();
+                                                                        }
+                                                                        updateKeybinds();
+                                                                    }
+                                                            )
+                                                    );
+                                                })
+                                                .horizontalSizing(Sizing.fill())
+                                )
+                                .child(Components.button(Text.translatable("controls.reboundless.keybinds.reload"), button -> {}))
+                )
+                .margins(Insets.top(3));
+
+        leftPopout.onToggled().subscribe(nowExpanded -> {
+            if (nowExpanded && rightPopout.expanded()) rightPopout.toggleExpansion();
+        });
+        rightPopout.onToggled().subscribe(nowExpanded -> {
+            if (nowExpanded && leftPopout.expanded()) leftPopout.toggleExpansion();
+        });
+
+
+        this.leftPanel = Containers.verticalFlow(Sizing.content(), Sizing.fill());
+//        this.leftPanel.child(
+//                        Components.button(Text.literal("☐"), button -> {
+//                                    var shouldCollapse = categoryStates.values().stream().allMatch(b -> b);
+//                                    categoryComponents.values().forEach(container -> {
+//                                        if (container.expanded() == shouldCollapse) container.toggleExpansion();
+//                                    });
+//                                })
+//                                .sizing(Sizing.fixed(20))
+//                )
+//                .margins(Insets.of(5));
+        this.leftPanel
+                .child(Containers.horizontalFlow(Sizing.fixed(50), Sizing.fixed(0)))
+                .child(leftPopout);
 
         this.rightPanel = Containers.verticalFlow(Sizing.content(), Sizing.fill());
+        this.rightPanel.horizontalAlignment(HorizontalAlignment.RIGHT);
         this.rightPanel
                 .child(Containers.horizontalFlow(Sizing.fixed(50), Sizing.fixed(0)))
-                .child(CollapsiblePopoutComponent.left(Sizing.expand(), false, Sizing.fixed(135))
-                               .child(
-                                       Containers.verticalFlow(Sizing.fixed(130), Sizing.content())
-                                               .child(
-                                                       Containers.horizontalFlow(Sizing.fill(), Sizing.fixed(20))
-                                                               .child(
-                                                                       Components.button(Text.translatable("controls.reboundless.keybinds.resetAll"), button -> {})
-                                                                               .horizontalSizing(Sizing.fill(49))
-                                                                               .positioning(Positioning.relative(0, 50))
-                                                               )
-                                                               .child(
-                                                                       Components.button(Text.translatable("controls.reboundless.keybinds.clearAll"), button -> {})
-                                                                               .horizontalSizing(Sizing.fill(49))
-                                                                               .positioning(Positioning.relative(100, 50))
-                                                               )
-                                               )
-                                               .child(Components.button(Text.translatable("controls.reboundless.keybinds.reload"), button -> {}))
-                               )
-                               .<CollapsiblePopoutComponent>configure(popout -> {
-                                   popout.contentLayout().horizontalAlignment(HorizontalAlignment.LEFT);
-                               })
-                               .margins(Insets.top(3))
-                );
-        this.rightPanel.horizontalAlignment(HorizontalAlignment.RIGHT);
+                .child(rightPopout);
 
         searchBar = new SearchTextBoxComponent(Sizing.fill());
         searchBar.text(searchTerm);
@@ -239,6 +285,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     public void updateKeybinds() {
         KeyBinding.updateKeysByCode();
         keybindComponents.forEach((keyBinding, component) -> component.update());
+        gameOptions.write();
     }
 
     public void regenerateOptionsList() {
@@ -413,6 +460,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
 
         final FlowLayout headerFlow;
         final ConfirmingButtonComponent resetButton;
+        final ConfirmingButtonComponent clearButton;
         final ButtonComponent settingsButton;
 
         final FlowLayout settingsFlow;
@@ -442,14 +490,25 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
             );
             this.resetButton = new ConfirmingButtonComponent(
                     Text.translatable("controls.reboundless.keybinds.keybind.reset"),
+                    Text.translatable("tooltip.reboundless.keybind.reset.confirm"),
                     button -> {
                         focusedBinding = null;
-                        gameOptions.setKeyCode(keyBinding, keyBinding.getDefaultKey());
-                        keyBinding.reboundless$setExtraData(keyBinding.reboundless$getExtraDataDefaults());
+                        keyBinding.reboundless$setToDefault();
                         updateKeybinds();
                     }
             );
             this.resetButton.sizing(Sizing.fixed(20));
+
+            this.clearButton = new ConfirmingButtonComponent(
+                    Text.translatable("controls.reboundless.keybinds.keybind.clear"),
+                    Text.translatable("tooltip.reboundless.keybind.clear.confirm"),
+                    button -> {
+                        focusedBinding = null;
+                        keyBinding.reboundless$clear();
+                        updateKeybinds();
+                    }
+            );
+            this.clearButton.sizing(Sizing.fixed(20));
 
             var settingsAnim = settingsFlow
                     .verticalSizing()
@@ -460,7 +519,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
             });
 
             this.settingsButton = Components.button(
-                    Text.literal("⚙"),
+                    Text.translatable("controls.reboundless.keybinds.keybind.settings"),
                     button -> {
                         if (!settingsFlow.hasParent()) this.child(settingsFlow);
                         settingsAnim.reverse();
@@ -477,6 +536,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                     Containers.horizontalFlow(Sizing.content(), Sizing.fill())
                             .child(bindButton.margins(Insets.right(3)))
                             .child(resetButton.margins(Insets.right(3)))
+                            .child(clearButton.margins(Insets.right(3)))
                             .child(settingsButton)
                             .positioning(Positioning.relative(100, 50))
                             .verticalAlignment(VerticalAlignment.CENTER)
@@ -528,6 +588,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
             if (toggle.enabled() != extraData.toggled().isTrue()) toggle.enabled(extraData.toggled().isTrue());
             if (invert.enabled() != extraData.inverted().isTrue()) invert.enabled(extraData.inverted().isTrue());
             resetButton.active(!keyBinding.isDefault());
+            clearButton.active(!keyBinding.reboundless$isClear());
         }
 
         @Override
@@ -536,11 +597,11 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
 
             int m = bindButton.x() - 6;
             if (fullyOverlaps) {
-                context.fill(m, y + 1, m + 3, y + bindButton.height() - 1, 100, Colors.RED);
+                context.fill(m, y + 1, m + 3, y + bindButton.height() - 1, 100, Color.ofDye(DyeColor.ORANGE).argb());
                 m -= 4;
             }
             if (partiallyOverlaps) {
-                context.fill(m, y + 1, m + 3, y + bindButton.height() - 1, 100, Color.ofDye(DyeColor.ORANGE).argb());
+                context.fill(m, y + 1, m + 3, y + bindButton.height() - 1, 100, Color.ofRgb(DyeColor.YELLOW.getFireworkColor()).argb());
             }
         }
 
@@ -588,7 +649,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                 var label = assembleTextFromModifiers(keyBinding.reboundless$getExtraData().modifiers());
                 label.append(keyBinding.getBoundKeyLocalizedText());
                 if (fullyOverlaps || partiallyOverlaps) {
-                    label = Text.literal("[ ").append(label.formatted(Formatting.WHITE)).append(" ]").withColor(fullyOverlaps ? Formatting.RED.getColorValue() : DyeColor.ORANGE.getEntityColor());
+                    label = Text.literal("[ ").append(label.formatted(Formatting.WHITE)).append(" ]").withColor(fullyOverlaps ? DyeColor.ORANGE.getEntityColor() : DyeColor.YELLOW.getFireworkColor());
                     setTooltip(Tooltip.of(Text.translatable("controls.keybinds.keybind." + (fullyOverlaps ? "conflicts" : "possibleConflicts"), tooltip)));
                 }
                 this.setMessage(label);

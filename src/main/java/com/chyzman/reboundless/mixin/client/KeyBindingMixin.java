@@ -4,6 +4,7 @@ import com.chyzman.reboundless.mixin.client.access.KeyBindingAccessor;
 import com.chyzman.reboundless.pond.KeyBindingDuck;
 import com.chyzman.reboundless.api.ConflictType;
 import com.chyzman.reboundless.api.ExtraKeyBindingData;
+import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.spongepowered.asm.mixin.Final;
@@ -28,6 +29,10 @@ public abstract class KeyBindingMixin implements KeyBindingDuck {
     @Shadow public abstract boolean isPressed();
 
     @Shadow private boolean pressed;
+
+    @Shadow public abstract void setBoundKey(InputUtil.Key boundKey);
+
+    @Shadow public abstract InputUtil.Key getDefaultKey();
 
     @Unique private boolean isVanilla = false;
 
@@ -133,8 +138,22 @@ public abstract class KeyBindingMixin implements KeyBindingDuck {
     }
 
     @Override
-    public boolean reboundless$isVanilla() {
-        return isVanilla;
+    public KeyBinding reboundless$setToDefault() {
+        this.setBoundKey(getDefaultKey());
+        extraData = new ExtraKeyBindingData(extraDataDefaults);
+        return (KeyBinding) (Object) this;
+    }
+
+    @Override
+    public KeyBinding reboundless$clear() {
+        this.setBoundKey(InputUtil.UNKNOWN_KEY);
+        extraData = new ExtraKeyBindingData();
+        return (KeyBinding) (Object) this;
+    }
+
+    @Override
+    public boolean reboundless$isClear() {
+        return boundKey.equals(InputUtil.UNKNOWN_KEY) && extraData.equals(new ExtraKeyBindingData());
     }
 
     @Override

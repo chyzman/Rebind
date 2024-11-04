@@ -14,10 +14,16 @@ import java.util.function.Consumer;
 
 public class ConfirmingButtonComponent extends ButtonComponent {
     private boolean confirming = false;
+    private Text confirmMessage;
 
-    public ConfirmingButtonComponent(Text message, Consumer<ButtonComponent> onPress) {
+    public ConfirmingButtonComponent(Text message, Text confirmMessage, Consumer<ButtonComponent> onPress) {
         super(message, onPress);
+        this.confirmMessage = confirmMessage;
         this.focusLost().subscribe(() -> {
+            confirming = false;
+            this.setTooltip(null);
+        });
+        this.mouseLeave().subscribe(() -> {
             confirming = false;
             this.setTooltip(null);
         });
@@ -31,7 +37,7 @@ public class ConfirmingButtonComponent extends ButtonComponent {
             super.onClick(mouseX, mouseY);
         } else {
             confirming = true;
-            this.setTooltip(Tooltip.of(Text.translatable("tooltip.reboundless.keybind.reset.confirm")));
+            this.setTooltip(Tooltip.of(this.confirmMessage));
         }
     }
 
@@ -49,4 +55,6 @@ public class ConfirmingButtonComponent extends ButtonComponent {
             context.drawText(textRenderer, this.getMessage(), (int) (this.getX() + this.width / 2f - textRenderer.getWidth(this.getMessage()) / 2f), (int) (this.getY() + (this.height - 8) / 2f), color, false);
         }
     }
+
+
 }

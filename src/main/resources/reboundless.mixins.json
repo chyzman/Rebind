@@ -15,6 +15,7 @@
     "client.KeyboardMixin",
     "client.MouseMixin",
     "client.StickyKeyBindingMixin",
+    "client.access.InputUtilKeyAccessor",
     "client.access.KeyBindingAccessor",
     "client.access.KeyBindingRegistryImplAccessor"
   ],

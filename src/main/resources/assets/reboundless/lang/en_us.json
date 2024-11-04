@@ -1,9 +1,15 @@
 {
   "controls.reboundless.keybinds.resetAll": "Reset All",
+  "controls.reboundless.keybinds.resetAll.confirm": "Are you sure you want to reset all keybinds?",
   "controls.reboundless.keybinds.clearAll": "Clear All",
+  "controls.reboundless.keybinds.clearAll.confirm": "Are you sure you want to clear all keybinds?",
   "controls.reboundless.keybinds.reload": "Reload",
 
   "controls.reboundless.keybinds.keybind.reset": "⇄",
+  "tooltip.reboundless.keybind.reset.confirm": "Are you sure you want to reset this keybind?",
+  "controls.reboundless.keybinds.keybind.clear": "☠",
+  "tooltip.reboundless.keybind.clear.confirm": "Are you sure you want to clear this keybind?",
+  "controls.reboundless.keybinds.keybind.settings": "···",
 
   "controls.reboundless.keybinds.keybind.toggled": "Input Mode",
   "controls.reboundless.keybinds.keybind.inverted": "Inverted",
@@ -32,7 +38,5 @@
   "key.mouse.101": "Scroll Up",
   "key.mouse.102": "Scroll Down",
   "key.mouse.103": "Scroll Left",
-  "key.mouse.104": "Scroll Right",
-
-  "tooltip.reboundless.keybind.reset.confirm": "Are you sure you want to reset this keybind?"
+  "key.mouse.104": "Scroll Right"
 }

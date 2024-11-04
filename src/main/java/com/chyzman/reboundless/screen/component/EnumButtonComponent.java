@@ -44,7 +44,6 @@ public class EnumButtonComponent<T extends Enum<T>> extends ButtonComponent {
     }
 
 
-
     @Override
     public boolean onMouseScroll(double mouseX, double mouseY, double amount) {
         cycle((int) signum(amount));

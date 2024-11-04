@@ -2,6 +2,7 @@ package com.chyzman.reboundless.pond;
 
 import com.chyzman.reboundless.api.ConflictType;
 import com.chyzman.reboundless.api.ExtraKeyBindingData;
+import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
 
 public interface KeyBindingDuck {
@@ -30,11 +31,20 @@ public interface KeyBindingDuck {
         throw new UnsupportedOperationException("You shouldn't see this");
     }
 
-    default boolean reboundless$isVanilla() {
+    default KeyBinding reboundless$setToDefault() {
+        throw new UnsupportedOperationException("You shouldn't see this");
+    }
+
+    default KeyBinding reboundless$clear() {
+        throw new UnsupportedOperationException("You shouldn't see this");
+    }
+
+    default boolean reboundless$isClear() {
         throw new UnsupportedOperationException("You shouldn't see this");
     }
 
     default ConflictType reboundless$conflictsWith(KeyBinding other) {
         throw new UnsupportedOperationException("You shouldn't see this");
     }
+
 }

@@ -1,19 +1,18 @@
 package com.chyzman.reboundless.mixin.client.access;
 
-import net.fabricmc.fabric.impl.client.keybinding.KeyBindingRegistryImpl;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-import java.util.List;
+import java.util.Map;
 
-@SuppressWarnings("UnstableApiUsage")
-@Mixin(KeyBindingRegistryImpl.class)
-public interface KeyBindingRegistryImplAccessor {
+@Mixin(InputUtil.Key.class)
+public interface InputUtilKeyAccessor {
 
-    @Accessor("MODDED_KEY_BINDINGS")
-    static List<KeyBinding> reboundless$getModdedKeys() {
+    @Accessor("KEYS")
+    static Map<String, InputUtil.Key> reboundless$getKeysMap() {
         throw new UnsupportedOperationException("me when the accessor is called");
     }
+
 }

@@ -41,7 +41,7 @@ public class CollapsiblePopoutComponent extends FlowLayout {
                 expandedSizing,
                 Insets.bottom(3),
                 false
-        );
+        ).configure(component -> component.contentLayout.verticalAlignment(VerticalAlignment.TOP));
     }
 
     public static CollapsiblePopoutComponent up (Sizing horizontalSizing, boolean expanded) {
@@ -59,7 +59,7 @@ public class CollapsiblePopoutComponent extends FlowLayout {
                 expandedSizing,
                 Insets.top(3),
                 true
-        );
+        ).configure(component -> component.contentLayout.verticalAlignment(VerticalAlignment.BOTTOM));
     }
 
     public static CollapsiblePopoutComponent down(Sizing horizontalSizing, boolean expanded) {
@@ -75,9 +75,9 @@ public class CollapsiblePopoutComponent extends FlowLayout {
                 0,
                 180,
                 expandedSizing,
-                Insets.right(3),
+                Insets.none(),
                 false
-        );
+        ).configure(component -> component.contentLayout.horizontalAlignment(HorizontalAlignment.LEFT));
     }
 
     public static CollapsiblePopoutComponent left(Sizing verticalSizing, boolean expanded) {
@@ -93,9 +93,9 @@ public class CollapsiblePopoutComponent extends FlowLayout {
                 180,
                 0,
                 expandedSizing,
-                Insets.left(3),
+                Insets.none(),
                 true
-        );
+        ).configure(component -> component.contentLayout().horizontalAlignment(HorizontalAlignment.RIGHT));
     }
 
     public static CollapsiblePopoutComponent right(Sizing verticalSizing, boolean expanded) {
