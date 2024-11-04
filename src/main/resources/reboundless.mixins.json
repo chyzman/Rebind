@@ -15,7 +15,8 @@
     "client.KeyboardMixin",
     "client.MouseMixin",
     "client.StickyKeyBindingMixin",
-    "client.access.KeyBindingAccessor"
+    "client.access.KeyBindingAccessor",
+    "client.access.KeyBindingRegistryImplAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

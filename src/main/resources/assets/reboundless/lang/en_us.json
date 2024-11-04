@@ -1,4 +1,8 @@
 {
+  "controls.reboundless.keybinds.resetAll": "Reset All",
+  "controls.reboundless.keybinds.clearAll": "Clear All",
+  "controls.reboundless.keybinds.reload": "Reload",
+
   "controls.reboundless.keybinds.keybind.reset": "⇄",
 
   "controls.reboundless.keybinds.keybind.toggled": "Input Mode",
@@ -6,6 +10,21 @@
 
   "controls.keybinds.keybind.possibleConflicts": "Might overlap with:\n%s",
   "controls.keybinds.keybind.conflicts": "Probably overlaps with:\n%s",
+
+  "controls.keybinds.sortMode": "Sort: %s",
+  "controls.keybinds.sort.inverted": "Inverted: %s",
+
+  "controls.keybinds.sortMode.vanilla": "Vanilla",
+  "controls.keybinds.sortMode.alphabetical": "Alphabetical",
+  "controls.keybinds.sortMode.recent": "Recent",
+
+  "controls.keybinds.categoryMode": "Categories: %s",
+
+  "controls.keybinds.categoryMode.vanilla": "Vanilla",
+  "controls.keybinds.categoryMode.mod": "Mods",
+  "controls.keybinds.categoryMode.none": "None",
+
+  "key.categories.unknown": "Unknown",
 
   "options.true": "True",
   "options.false": "False",

@@ -2,7 +2,6 @@ package com.chyzman.reboundless.screen.component;
 
 import io.wispforest.owo.ui.component.TextBoxComponent;
 import io.wispforest.owo.ui.core.Sizing;
-import net.minecraft.client.MinecraftClient;
 import org.lwjgl.glfw.GLFW;
 
 public class SearchTextBoxComponent extends TextBoxComponent {
@@ -13,9 +12,7 @@ public class SearchTextBoxComponent extends TextBoxComponent {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_TAB) {
-            if (MinecraftClient.getInstance().currentScreen != null) {
-                MinecraftClient.getInstance().currentScreen.setFocused(MinecraftClient.getInstance().currentScreen);
-            }
+            if (this.focusHandler() != null) this.focusHandler().focus(null, FocusSource.MOUSE_CLICK);
             return false;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);

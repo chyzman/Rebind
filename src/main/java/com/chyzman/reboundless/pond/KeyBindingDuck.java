@@ -1,7 +1,7 @@
 package com.chyzman.reboundless.pond;
 
-import com.chyzman.reboundless.util.ExtraKeyBindingData;
-import com.chyzman.reboundless.util.ScreenUtil;
+import com.chyzman.reboundless.api.ConflictType;
+import com.chyzman.reboundless.api.ExtraKeyBindingData;
 import net.minecraft.client.option.KeyBinding;
 
 public interface KeyBindingDuck {
@@ -22,8 +22,19 @@ public interface KeyBindingDuck {
         throw new UnsupportedOperationException("You shouldn't see this");
     }
 
-    default ScreenUtil.ConflictType reboundless$conflictsWith(KeyBinding other) {
+    default long reboundless$lastConfigured() {
         throw new UnsupportedOperationException("You shouldn't see this");
     }
 
+    default KeyBinding reboundless$updateLastConfigured() {
+        throw new UnsupportedOperationException("You shouldn't see this");
+    }
+
+    default boolean reboundless$isVanilla() {
+        throw new UnsupportedOperationException("You shouldn't see this");
+    }
+
+    default ConflictType reboundless$conflictsWith(KeyBinding other) {
+        throw new UnsupportedOperationException("You shouldn't see this");
+    }
 }

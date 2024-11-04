@@ -3,7 +3,6 @@ package com.chyzman.reboundless.util;
 import com.chyzman.reboundless.screen.component.ToggleButtonComponent;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.wispforest.owo.ui.container.Containers;
-import io.wispforest.owo.ui.container.FlowLayout;
 import io.wispforest.owo.ui.core.*;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -11,12 +10,6 @@ import net.minecraft.util.Identifier;
 import java.util.function.Consumer;
 
 public class ScreenUtil {
-
-    public enum ConflictType {
-        NONE,
-        POSSIBLE,
-        GUARANTEED
-    }
 
     public static Surface translucentTiledSurface(Identifier texture, int textureWidth, int textureHeight) {
         return (context, component) -> {

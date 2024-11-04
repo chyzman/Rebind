@@ -1,6 +1,7 @@
 package com.chyzman.reboundless.mixin.client;
 
-import com.chyzman.reboundless.util.ExtraKeyBindingData;
+import com.chyzman.reboundless.Reboundless;
+import com.chyzman.reboundless.api.ExtraKeyBindingData;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -19,6 +20,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class GameOptionsMixin {
 
     @Shadow @Final static Gson GSON;
+
+    @Inject(method = "<clinit>", at = @At("HEAD"))
+    private static void startRecordingVanillaKeys(CallbackInfo ci) {
+        Reboundless.REGISTERING_VANILLA_KEYS = true;
+    }
+
+    @Inject(method = "<clinit>", at = @At("RETURN"))
+    private static void stopRecordingVanillaKeys(CallbackInfo ci) {
+        Reboundless.REGISTERING_VANILLA_KEYS = false;
+    }
 
     @Inject(method = "accept", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/KeyBinding;getTranslationKey()Ljava/lang/String;", shift = At.Shift.AFTER))
     private void loadExtraKeyBindingData(GameOptions.Visitor visitor, CallbackInfo ci, @Local()KeyBinding keyBinding) {

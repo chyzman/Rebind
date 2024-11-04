@@ -1,9 +1,12 @@
 package com.chyzman.reboundless.screen.impl;
 
+import com.chyzman.reboundless.api.CategoryMode;
 import com.chyzman.reboundless.mixin.client.access.KeyBindingAccessor;
 import com.chyzman.reboundless.mixin.common.access.ScrollContainerAccessor;
 import com.chyzman.reboundless.screen.component.*;
+import com.chyzman.reboundless.api.ConflictType;
 import com.chyzman.reboundless.util.ScreenUtil;
+import com.chyzman.reboundless.api.SortingMode;
 import com.chyzman.reboundless.util.StringUtil;
 import io.wispforest.owo.ui.base.BaseOwoScreen;
 import io.wispforest.owo.ui.component.ButtonComponent;
@@ -20,6 +23,7 @@ import net.minecraft.client.gui.widget.EntryListWidget;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
@@ -38,10 +42,11 @@ import static com.chyzman.reboundless.Reboundless.REAL_KEYS_MAP;
 @Environment(EnvType.CLIENT)
 public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements CommandOpenedScreen {
     public static final Map<String, Boolean> categoryStates = new HashMap<>();
-    public static boolean sortingExpanded = false;
     public static double scrollAmount = 0;
 
-    public static boolean useCategories = true;
+    public static SortingMode sortingMode = SortingMode.VANILLA;
+    public static boolean sortInverted = false;
+    public static CategoryMode categoryMode = CategoryMode.VANILLA;
     public static String searchTerm = "";
 
     @Nullable
@@ -60,7 +65,6 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
 
     protected FlowLayout scrollFlow;
 
-    protected CollapsibleDropdownComponent sortingFlow;
     protected FlowLayout optionsFlow;
 
     protected SearchTextBoxComponent searchBar;
@@ -80,20 +84,9 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
     @SuppressWarnings("DataFlowIssue")
     protected void build(FlowLayout rootComponent) {
 
-        this.sortingFlow = new CollapsibleDropdownComponent(Sizing.content(), sortingExpanded);
-        this.sortingFlow.onToggled().subscribe(nowExpanded -> sortingExpanded = nowExpanded);
-
-        var categoriesCheck = Components.smallCheckbox(Text.translatable("controls.keybinds.categories")).checked(useCategories);
-        categoriesCheck.onChanged().subscribe(checked -> {
-            useCategories = checked;
-            regenerateOptionsList();
-        });
-
-        this.sortingFlow.child(categoriesCheck);
-
         this.scrollFlow = Containers.verticalFlow(Sizing.fill(), Sizing.content());
         this.scrollFlow
-                .child(this.sortingFlow)
+//                .child(this.sortingFlow)
                 .padding(Insets.of(3).withRight(16).withTop(0))
                 .horizontalAlignment(HorizontalAlignment.CENTER);
 
@@ -125,9 +118,34 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                 .margins(Insets.of(5));
 
         this.rightPanel = Containers.verticalFlow(Sizing.content(), Sizing.fill());
-        this.rightPanel.child(Containers.horizontalFlow(Sizing.fixed(50), Sizing.fixed(0)));
+        this.rightPanel
+                .child(Containers.horizontalFlow(Sizing.fixed(50), Sizing.fixed(0)))
+                .child(CollapsiblePopoutComponent.left(Sizing.expand(), false, Sizing.fixed(135))
+                               .child(
+                                       Containers.verticalFlow(Sizing.fixed(130), Sizing.content())
+                                               .child(
+                                                       Containers.horizontalFlow(Sizing.fill(), Sizing.fixed(20))
+                                                               .child(
+                                                                       Components.button(Text.translatable("controls.reboundless.keybinds.resetAll"), button -> {})
+                                                                               .horizontalSizing(Sizing.fill(49))
+                                                                               .positioning(Positioning.relative(0, 50))
+                                                               )
+                                                               .child(
+                                                                       Components.button(Text.translatable("controls.reboundless.keybinds.clearAll"), button -> {})
+                                                                               .horizontalSizing(Sizing.fill(49))
+                                                                               .positioning(Positioning.relative(100, 50))
+                                                               )
+                                               )
+                                               .child(Components.button(Text.translatable("controls.reboundless.keybinds.reload"), button -> {}))
+                               )
+                               .<CollapsiblePopoutComponent>configure(popout -> {
+                                   popout.contentLayout().horizontalAlignment(HorizontalAlignment.LEFT);
+                               })
+                               .margins(Insets.top(3))
+                );
+        this.rightPanel.horizontalAlignment(HorizontalAlignment.RIGHT);
 
-        searchBar = new SearchTextBoxComponent(Sizing.fill(50));
+        searchBar = new SearchTextBoxComponent(Sizing.fill());
         searchBar.text(searchTerm);
         searchBar.setPlaceholder(Text.translatable("gui.socialInteractions.search_hint").formatted(Formatting.GRAY));
         searchBar.onChanged().subscribe(text -> {
@@ -165,8 +183,51 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                         Containers.horizontalFlow(Sizing.fill(), Sizing.fixed(2))
                                 .surface(ScreenUtil.translucentTiledSurface(this.client.world == null ? FOOTER_SEPARATOR_TEXTURE : Screen.INWORLD_FOOTER_SEPARATOR_TEXTURE, 16, 2))
                 )
-                .child(Containers.verticalFlow(Sizing.fill(), Sizing.fixed(21))
-                               .child(searchBar)
+                .child(Containers.horizontalFlow(Sizing.fill(), Sizing.fixed(45))
+                               .child(
+                                       Containers.verticalFlow(Sizing.fill(60), Sizing.fill())
+                                               .child(
+                                                       Containers.horizontalFlow(Sizing.fill(), Sizing.fixed(20))
+                                                               .child(
+                                                                       new EnumButtonComponent<>(
+                                                                               SortingMode.class,
+                                                                               sortingMode,
+                                                                               sortingMode -> Text.translatable("controls.keybinds.sortMode", sortingMode.getLabel()),
+                                                                               newMode -> {
+                                                                                   sortingMode = newMode;
+                                                                                   regenerateOptionsList();
+                                                                               }
+                                                                       )
+                                                                               .horizontalSizing(Sizing.fill(49))
+                                                                               .positioning(Positioning.relative(0, 50))
+                                                               )
+                                                               .child(
+                                                                       new EnumButtonComponent<>(
+                                                                               CategoryMode.class,
+                                                                               categoryMode,
+                                                                               sortingMode -> Text.translatable("controls.keybinds.categoryMode", sortingMode.getLabel()),
+                                                                               newMode -> {
+                                                                                   categoryMode = newMode;
+                                                                                   regenerateOptionsList();
+                                                                               }
+                                                                       )
+                                                                               .horizontalSizing(Sizing.fill(49))
+                                                                               .positioning(Positioning.relative(100, 50))
+                                                               )
+                                                               .margins(Insets.horizontal(1))
+                                               )
+                                               .child(
+                                                       searchBar
+                                                               .positioning(Positioning.relative(50, 100))
+                                               )
+                                               .margins(Insets.right(5))
+                               )
+                               .child(
+                                       Components.button(ScreenTexts.DONE, button -> this.close())
+                                               .horizontalSizing(Sizing.expand())
+                                               .positioning(Positioning.relative(100, 100))
+                                               .margins(Insets.bottom(1))
+                               )
                                .<FlowLayout>configure(footer -> {
                                    footer.verticalAlignment(VerticalAlignment.CENTER);
                                    footer.margins(Insets.of(5));
@@ -185,38 +246,60 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
         categoryComponents.clear();
         if (this.optionsFlow != null) this.optionsFlow.remove();
 
-        var sortedKeys = Arrays.stream(gameOptions.allKeys).sorted(KeyBinding::compareTo).toList();
+        var sortedKeys = new ArrayList<>(Arrays.stream(gameOptions.allKeys).sorted(sortInverted ? sortingMode.getComparator().reversed() : sortingMode.getComparator()).toList());
 
-        var categories = sortedKeys.stream().map(KeyBinding::getCategory).distinct().toList();
+        var categories = new ArrayList<>(sortedKeys.stream().map(keyBinding -> categoryMode.getCategory(keyBinding)).filter(Objects::nonNull).distinct().toList());
 
         this.optionsFlow = Containers.verticalFlow(Sizing.fill(), Sizing.content());
 
-        for (String category : categories) {
-            var keys = sortedKeys.stream().filter(k -> k.getCategory().equals(category)).toList();
+        var useCategories = searchTerm.isBlank();
 
-            SmoothCollapsibleContainer container = null;
+        if (useCategories && !categories.isEmpty()) {
+            for (String category : categories) {
+                var keys = sortedKeys.stream().filter(k -> {
+                    var keyCategory = categoryMode.getCategory(k);
+                    return keyCategory == null ? category.equals("unknown") : keyCategory.equals(category);
+                }).toList();
+                sortedKeys.removeAll(keys);
 
-            var putOptionsHere = this.optionsFlow;
-
-            if (useCategories) {
-                container = new SmoothCollapsibleContainer(
+                var container = new SmoothCollapsibleContainer(
                         Sizing.fill(),
                         Sizing.content(),
-                        Text.translatable(category),
+                        categoryMode.getLabel(category),
                         categoryStates.getOrDefault(category, true)
                 );
                 container.onToggled().subscribe(nowExpanded -> categoryStates.put(category, nowExpanded));
 
-                putOptionsHere = container;
-            }
+                for (KeyBinding key : keys) {
+                    if (StringUtil.isValidForSearch(searchTerm, Text.translatable(key.getTranslationKey()).getString())) container.child(new KeybindConfigurationComponent(key));
+                }
 
-            for (KeyBinding key : keys) {
-                if (searchTerm.isBlank() || StringUtil.isValidForSearch(searchTerm, Text.translatable(key.getTranslationKey()).getString())) putOptionsHere.child(new KeybindConfigurationComponent(key));
+                if (!container.collapsibleChildren().isEmpty()) {
+                    this.optionsFlow.child(container);
+                    categoryComponents.put(category, container);
+                }
             }
+            if (!sortedKeys.isEmpty()) {
+                var container = new SmoothCollapsibleContainer(
+                        Sizing.fill(),
+                        Sizing.content(),
+                        Text.translatable("key.categories.unknown"),
+                        categoryStates.getOrDefault("unknown", true)
+                );
+                container.onToggled().subscribe(nowExpanded -> categoryStates.put("unknown", nowExpanded));
 
-            if (useCategories && container != null && !container.collapsibleChildren().isEmpty()) {
-                this.optionsFlow.child(container);
-                categoryComponents.put(category, container);
+                for (KeyBinding key : sortedKeys) {
+                    if (StringUtil.isValidForSearch(searchTerm, Text.translatable(key.getTranslationKey()).getString())) container.child(new KeybindConfigurationComponent(key));
+                }
+
+                if (!container.collapsibleChildren().isEmpty()) {
+                    this.optionsFlow.child(container);
+                    categoryComponents.put("unknown", container);
+                }
+            }
+        } else {
+            for (KeyBinding key : sortedKeys) {
+                if (StringUtil.isValidForSearch(searchTerm, Text.translatable(key.getTranslationKey()).getString())) this.optionsFlow.child(new KeybindConfigurationComponent(key));
             }
         }
 
@@ -485,7 +568,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                     var possibleConflicts = REAL_KEYS_MAP.get(((KeyBindingAccessor) keyBinding).reboundless$getBoundKey());
                     for (KeyBinding possibleConfict : possibleConflicts) {
                         var conflictType = keyBinding.reboundless$conflictsWith(possibleConfict);
-                        if (conflictType == ScreenUtil.ConflictType.GUARANTEED) {
+                        if (conflictType == ConflictType.GUARANTEED) {
                             if (!fullyOverlaps) {
                                 tooltip = Text.empty();
                             } else {
@@ -493,7 +576,7 @@ public class KeybindingScreen extends BaseOwoScreen<FlowLayout> implements Comma
                             }
                             fullyOverlaps = true;
                             tooltip.append(Text.translatable(possibleConfict.getTranslationKey()));
-                        } else if (conflictType == ScreenUtil.ConflictType.POSSIBLE) {
+                        } else if (conflictType == ConflictType.POSSIBLE) {
                             if (!fullyOverlaps) {
                                 if (partiallyOverlaps) tooltip.append(Text.literal(", "));
                                 tooltip.append(Text.translatable(possibleConfict.getTranslationKey()));

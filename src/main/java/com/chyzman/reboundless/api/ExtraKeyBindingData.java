@@ -1,4 +1,4 @@
-package com.chyzman.reboundless.util;
+package com.chyzman.reboundless.api;
 
 import io.wispforest.endec.Endec;
 import io.wispforest.endec.impl.StructEndecBuilder;
